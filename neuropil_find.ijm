@@ -6,11 +6,15 @@
 #@ File (label = "Output directory", style = "directory") inverted
 #@ String (label = "File suffix", value = ".tif") suffix
 #@ boolean (label = "Don't invert images") inverted_image
+
+// doesn't check if empty folders, overwrites?
+//changing of the name is only correct the first time through
+
 // See also Process_Folder.py for a version of this code
 // in the Python scripting language.
 
 
-//print(Template);
+print(inverted);
 //if (matches(title, ".*[AB]\\.[jJ][pP]e*[gG]$")) {setThreshold(146.0000, 255.0000);}
 
 print("output is 'inverted'");
@@ -31,7 +35,8 @@ Template=getTitle();
 //Select
 //File.openSequence(output, "virtual");
 //new_input=getTitle();
-
+print(Template);
+print(new_input);
 run("Template Matching Image", "template=["+Template+"] image="+new_input+" rotate=[] matching_method=[Normalised 0-mean cross-correlation] number_of_objects=1 score_threshold=0.5 maximal_overlap=0.4 add_roi show_result");
  selectWindow("Results");
 Table.sort("Score");
@@ -56,10 +61,33 @@ Array.print(headings);
 for (a=0; a<lengthOf(headings); a++)
     if (a == 1){
     	print(headings[a]);
-//    	selectWindow(headings[a);
+//    	open(inverted+"/"+headings[a]);
+//		selectWindow(headings[a]);
+		Stack.setPosition(inverted, headings[a],1);
+		image_title=headings[a];
+		image_title_2=image_title.replace(".tif", "");
+		print(image_title);
     }
+    else if (a == 2){
+    	setSlice(headings[a]);
+    	}
 
+selectWindow(Template);
+match=getBoolean("Confirm Match?");
+if (match == 0){
+	print("No match");
+} else {
+	print("Match");	
+	// choose neuropil name, doesn't remove first .tif
+	File.rename(inverted+"/"+image_title, inverted+"/"+image_title_2+"_neuropil_start.tif");
+}
 
+//selectImage(id);
+//run("Set Slice...");
+
+//Stack.setSlice(n);
+//Stack.setPosition(inverted, headings[a]);
+//label
 //
 //best=getResult("Image");
 //print(best);
