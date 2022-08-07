@@ -9,9 +9,10 @@
 #@ File (label = "Output directory", style = "directory") inverted
 #@ String (label = "File suffix", value = ".tif") suffix
 #@ boolean (label = "Don't invert images") inverted_image
-#@ int (label = "all image reduction", value=1, min=0, max=10, style=slider ) reduce
+#@ int (label = "all image reduction", value=5, min=1, max=10, style=slider ) reduce
 #@ int (label = "overview size", value=1, min=0, max=40, style=slider ) ov_size
 #@ int (label = "neuropil size", value=1, min=0, max=40, style=slider  ) neu_size
+#@ ng ()
 //https://imagej.net/imagej-wiki-static/Macros
 //invert template
 //doesn't show first image, whether invereted or not
@@ -22,6 +23,7 @@
 //virtual stack, all images are set to same pixel dimensions
 //confirm match title could be nice if it asked which ROI is in question
 // rename to specifc neuropil when match is confirmed
+//try autocrop or change background to transparent
 
 // See also Process_Folder.py for a version of this code
 // in the Python scripting language.
@@ -29,18 +31,40 @@
 
 //print(inverted);
 
-//print("output is 'inverted'");
-if (inverted_image == 0){
-	run("Image Sequence...", "select="+input+" dir="+input+" sort use");
-	Input=getTitle();
-	run("Virtual Stack...", "output="+inverted+" output_format=TIFF text1=run(\"Invert\");\n");
-	new_input=getTitle();
-//	print(new_input);
-	close(Input);
-}else{
-	File.openSequence(input, "virtual");
-	new_input=getTitle();
-}
+////print("output is 'inverted'");
+//if (inverted_image == 0){
+//	run("Image Sequence...", "select="+input+" dir="+input+" sort use");
+//	Input=getTitle();
+//	run("32-bit");
+//    run("Invert LUTs");	
+//    run("RGB Color");
+////	run("Virtual Stack...", "output="+inverted+" output_format=TIFF text1=run(\"Invert\");\n");
+//	filelist = getFileList(input);
+//	Array.print(filelist);
+////	for (i = 0; i <= lengthOf(filelist)-1; i++) {
+//////    if (endsWith(filelist[i], ".tif")) {
+////	saveAs("Tiff", inverted+ File.separator + i);
+////	}
+////	saveAs("Tiff", inverted+ File.separator + "inverted");
+////	close(Input);
+////	run("Image Sequence...", "select="+inverted+" dir="+inverted+" sort use");
+//	new_input=getTitle();
+//////	print(new_input);
+////	close(Input);
+////	nSlices;
+////	for (i = 1; i <= nSlices; i++) {
+////    setSlice(i);
+////    run("Invert LUTs");
+////    new_input=getTitle();
+//////	print(new_input);
+////	close(Input);
+////}
+//}else{
+//	File.openSequence(input, "virtual");
+//	new_input=getTitle();
+//}
+File.openSequence(input, "virtual");
+new_input=getTitle();
 //open(template);
 //File.openSequence(template, "virtual");
 //Template=getTitle();
@@ -50,6 +74,7 @@ if (inverted_image == 0){
 //selectWindow(new_input);
 //selectWindow(Template);
 //	input
+if (reduce != 0) {
 selectWindow(new_input);
 getDimensions(width, height, channels, slices, frames);
 print("   width: "+width);
@@ -57,6 +82,8 @@ width=width/(reduce);
 print("   width: "+width);
 height=height/(reduce);
 run("Size...", "width="+width+ " height="+height+" depth="+slices+" constrain average interpolation=Bilinear");
+
+}
 //run("Threshold...");
 //	run("32-bit");
 //	setThreshold(2.0000, 1000000000000000000000000000000.0000);
@@ -69,12 +96,15 @@ print(template);
 filelist = getFileList(template);
 Array.print(filelist);
 for (i = 0; i <= lengthOf(filelist)-1; i++) {
-//    if (endsWith(filelist[i], ".tif")) { 
 	open(template + File.separator + filelist[i]);
-//    } 
-//	selectWindow(Template);
 	selectWindow(filelist[i]);
 	print(i);
+	if (inverted_image == 0) {
+		run("Invert");
+	}
+//    if (endsWith(filelist[i], ".tif")) { 
+//    } 
+//	selectWindow(Template);
 //    setSlice(i);
 	ratio=neu_size/ov_size;
 //	template
@@ -201,4 +231,4 @@ function processFile(neuropil, overview ) {
 	// Do the processing here by adding your own code.
 	print("Processing: " + overview );
 }
-
+print("Done!")
