@@ -12,15 +12,14 @@
 #@ int (label = "all image reduction", value=5, min=1, max=10, style=slider ) reduce
 #@ int (label = "overview size", value=1, min=0, max=40, style=slider ) ov_size
 #@ int (label = "neuropil size", value=1, min=0, max=40, style=slider  ) neu_size
-#@ ng ()
+
+//Tile_002-001-001842_0-000.s1853_e01.tif
 //https://imagej.net/imagej-wiki-static/Macros
 //invert template
 //doesn't show first image, whether invereted or not
 // doesn't check if empty folders, overwrites?
 //changing of the name is only correct the first time through
 // should check if files already present so doesn't have to reload
-// need to look at the pictures in low quality
-//virtual stack, all images are set to same pixel dimensions
 //confirm match title could be nice if it asked which ROI is in question
 // rename to specifc neuropil when match is confirmed
 //try autocrop or change background to transparent
@@ -28,7 +27,7 @@
 // See also Process_Folder.py for a version of this code
 // in the Python scripting language.
 
-
+// no obselete, because swithcing the template makes sense
 //print(inverted);
 
 ////print("output is 'inverted'");
@@ -82,7 +81,8 @@ width=width/(reduce);
 print("   width: "+width);
 height=height/(reduce);
 run("Size...", "width="+width+ " height="+height+" depth="+slices+" constrain average interpolation=Bilinear");
-
+// hopefully this works
+run("Auto Crop");
 }
 //run("Threshold...");
 //	run("32-bit");
@@ -106,7 +106,7 @@ for (i = 0; i <= lengthOf(filelist)-1; i++) {
 //    } 
 //	selectWindow(Template);
 //    setSlice(i);
-	ratio=neu_size/ov_size;
+	ratio=ov_size/neu_size;
 //	template
 	getDimensions(width, height, channels, slices, frames);
 	print("   width: "+width);
@@ -224,11 +224,11 @@ for (a=0; a<lengthOf(fulltable); a++){
 //	// choose neuropil name, doesn't remove first .tif
 //	File.rename(inverted+"/"+image_title, inverted+"/"+image_title_2+"_neuropil_start.tif");
 //}
-
+print("Done!");
 //processFile(Template, new_input);
 
 function processFile(neuropil, overview ) {
 	// Do the processing here by adding your own code.
 	print("Processing: " + overview );
 }
-print("Done!")
+

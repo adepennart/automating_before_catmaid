@@ -4,12 +4,13 @@
 
 #@ File (label = "Input directory", style = "directory") folder
 #@ File (label = "Input directory 2 (if needed)", style = "directory", required= False) folder_2
-#@ int (label = "layer_count", value=5, min=1, max=10, style=slider ) layers
+#obselete
+##@ int (label = "layer_count", value=5, min=1, max=10, style=slider ) layers
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ String(choices={".GRAY8", ".GRAY16", ".GRAY32", ".COLOR_RGB"}, style="list") export_type
 #@ boolean (label = "Don't invert images") inverted_image
-
+#Tile_002-001-001842_0-000.s1853_e01.tif
 #DO THIS
 #should be able to count layers in file
 
@@ -21,6 +22,11 @@ from ini.trakem2.imaging import Blending
 from ij.io import FileSaver
 from java.awt import Color
 from mpicbg.ij.clahe import Flat
+
+#upload to catmaid
+#https://github.com/benmulcahy406/script_collection/blob/main/TrakEM2_export_selected_arealists_to_obj.pys
+
+
 
 #could be useful for setting threads
 #example code
@@ -50,6 +56,7 @@ elif export_type == ".COLOR_RGB":
 
 #variable
 joint_folder=[]
+pattern = re.compile(".*_z[\d]_.*\.tif")
 
 #folder = "/path/to/folder/with/all/images/"
 #print(type(folder))
@@ -77,8 +84,9 @@ elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
 	for fold in reversed(match_1):
 		if fold in match_2:
 #			print(fold,"found")
-			fold_good=re.search("(\/.[^\/]+)",fold).group(0)
-			joint_folder.insert(0,fold_good)
+#			fold_good=re.search("(\/.[^\/]+)",fold).group(0)
+#			joint_folder.insert(0,fold_good)	
+			joint_folder.insert(0,fold)
 #print((joint_folder))
 #		if fold 
 joint_folder="".join(joint_folder)
@@ -98,6 +106,34 @@ process_as_composite = False
 composite = False
 mask = None
 
+# 3. To each layer, add images that have "_zN_" in the name
+#     where N is the index of the layer
+#     and also end with ".tif"
+filenames = filter(pattern.match, os.listdir(folder))
+for n,filename in enumerate(filenames):
+	for m,filename_2 in enumerate(filenames[n+1:len(filenames)]):
+		if filename == filename_2:
+			print("found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
+			#need to kill code here so that they can delete duplicate
+#		for num in range(0,len(filename)):
+#			if filename[num] == filename_2[num]:
+##				print(filename, filename_2,filename[num])
+#				if filename[num] == len(filename):
+#					print("found duplicate ", filename, filename_2, " at", n, m )
+#			elif filename[num] != filename_2[num]:
+#				break
+if folder_2:
+	filenames_2 = filter(pattern.match, os.listdir(folder_2))
+	#print(filenames)
+	if len(filenames) == len(filenames_2):
+		filenames_3=filenames+filenames_2
+		print(filenames_3)
+	else:
+		print("not an equal number of files in each folder")
+		#need to kill code here so that they can delete duplicate
+elif not folder_2:
+	filenames_3=filenames
+
 
 #project=IJ.run("TrakEM2 (blank)", "select=/Users/Auguste/Desktop/ex_image_stack/trakem2")
 #project=IJ.run("TrakEM2 (blank)")
@@ -111,31 +147,54 @@ project = Project.newFSProject("blank", None, joint_folder)
 
 #print(project)
 layerset = project.getRootLayerSet()
-#print(layerset)
-#  2. Create 10 layers (or as many as you need)
-#picks layer 0 even if there isn't one
-for i in range(layers):
-	layerset.getLayer(i, 1, True)
-#  layerset.getLayer(i, 0, True)
+##print(layerset)
+##  2. Create 10 layers (or as many as you need)
+##picks layer 0 even if there isn't one
+#for i in range(layers):
+#	layerset.getLayer(i, 1, True)
+##  layerset.getLayer(i, 0, True)
 
 # ... and update the LayerTree:
 project.getLayerTree().updateList(layerset)
 # ... and the display slider
 Display.updateLayerScroller(layerset)
 
-# 3. To each layer, add images that have "_zN_" in the name
-#     where N is the index of the layer
-#     and also end with ".tif"
-filenames = os.listdir(folder)
-if folder_2:
-	filenames_2 = os.listdir(folder_2)
-	#print(filenames)
-	filenames_3=filenames+filenames_2
-print(filenames_3)
+#  2. Create 10 layers (or as many as you need)
+#picks layer 0 even if there isn't one
+
+if filenames_2:
+	for i in range(len(filenames)):
+		layerset.getLayer(i, 1, True)
+elif not filenames_2:
+	for i in range(len(filenames)/2):
+		layerset.getLayer(i, 1, True)
+		#assumes only two different layers
+	
+	
+for filename in filenames_3:
+	print(filename)
+	#find another matching code
+	match = re.findall("(\d)",filename)
+#	for some reason does not work
+#	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
+	n_start=int(match[1])
+	print(n_start)
+	break
+	
+#for filename in filenames_3:
+#	filename.encode('ascii','ignore')
+
+##.*-([\d]{3})-.*\.tif
+#for filename in filenames_3:
+#	print(filename)
+#	if re.search(".*_z\d_.*\.tif",filename):
+#	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
+
 for i,layer in enumerate(layerset.getLayers()):
 	# EDIT the following pattern to match the filename of the images
 	# that must be inserted into section at index i:
-	pattern = re.compile(".*_z" + str(i) + "_.*\.tif")
+	#will have to get input from user what the start file is
+	pattern = re.compile(".*_z" + str(n_start+i) + "_.*\.tif")
 	for filename in filter(pattern.match, filenames_3):
 #    print(pattern.match,i)
 #    print(filename)
@@ -198,11 +257,6 @@ layerset.setMinimumDimensions()
 
 # 6. Blend images of each layer
 Blending.blendLayerWise(layerset.getLayers(), True, None)
-
-## 7. Save the project
-project.saveAs(os.path.join(joint_folder, project_name), False)
-
-
 
 #front = Display.getFront() # the active TrakEM2 display window
 #layer = front.getLayer()
@@ -276,6 +330,9 @@ for i, layer in enumerate(layerset.getLayers()):
 #                        mask,
 #                        composite )
   FileSaver(imp).saveAsTiff(targetDir + "/" + str(i + 1) + ".tif")
+
+## 7. Save the project
+project.saveAs(os.path.join(joint_folder, project_name), False)
 
 
 print("Done!")
