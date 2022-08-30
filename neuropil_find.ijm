@@ -13,6 +13,12 @@
 #@ int (label = "overview size", value=1, min=0, max=40, style=slider ) ov_size
 #@ int (label = "neuropil size", value=1, min=0, max=40, style=slider  ) neu_size
 
+//variables
+area=0
+
+time=getTime();
+
+
 //Tile_002-001-001842_0-000.s1853_e01.tif
 //https://imagej.net/imagej-wiki-static/Macros
 //invert template
@@ -73,7 +79,40 @@ new_input=getTitle();
 //selectWindow(new_input);
 //selectWindow(Template);
 //	input
-if (reduce != 0) {
+time=getTime();
+
+match=getBoolean("select area for crop");
+if (match == 1) {
+	while (1) {
+		if (selectionType() == 0 ) {
+			getSelectionBounds(tx, ty, twidth, theight);
+			if (getTime()> time+10000){
+				if (twidth > 100) {
+					tarea=twidth*theight;
+					if (tarea == area) {
+						match=getBoolean("area selected?");
+						print(match, "hey");
+						if (match == 1) {
+							run("Crop");
+							break
+						}
+						else if (match != 1){
+							time=time+10000;	
+						}
+					}
+					else if (tarea != area) {
+					area = tarea;
+					}
+				}	
+			}	
+		}
+	}
+}
+time_2=getTime();
+print(time_2-time);
+
+
+if (reduce != 1) {
 selectWindow(new_input);
 getDimensions(width, height, channels, slices, frames);
 print("   width: "+width);
@@ -84,6 +123,7 @@ run("Size...", "width="+width+ " height="+height+" depth="+slices+" constrain av
 // hopefully this works
 run("Auto Crop");
 }
+
 //run("Threshold...");
 //	run("32-bit");
 //	setThreshold(2.0000, 1000000000000000000000000000000.0000);
