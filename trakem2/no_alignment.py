@@ -15,7 +15,6 @@ List of "non standard modules"
 	No non standard modules are used in the program.
 
 Procedure:
-    1. multiple checks to ensure function
     2. scales OV stack to 4x magnification
     3. creates trakem2 project
     4. creates layers and populates with one image from OV and from NO folders
@@ -107,6 +106,9 @@ pattern_2 = re.compile(".*_z[\d]_.*\.tif")
 #pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
 pattern_v2_p1 = (".*_z")
 pattern_v2_p2 = ("_.*\.tif")
+NO_folder_list=[]
+NO_folder_dict={}
+filenames_NO=[]
 z_axis_start=0 #z axis number in filename
 #additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=2
@@ -153,148 +155,123 @@ elif not windows:
 	match_1=re.findall("\/.[^\/]+",folder)
 	match_2=re.findall("\/.[^\/]+",folder_2)
 #print(match_1)
-#print(match_2)
 
-#check for the same folder and if dfferent folder finds mutual parent folders
-if match_1[len(match_1)-1] == match_2[len(match_2)-1]:
-	print("ERROR: same folder selected for OV and NO" )
-	sys.exit("same folder selected for OV and NO" )
-elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
-	for Folder in reversed(match_1):
-		if Folder in match_2:
-			joint_folder.insert(0,Folder)
-joint_folder="".join(joint_folder)
-#print(joint_folder)
-
-#func: find files in input directories
 filenames = filter(pattern_1.match, os.listdir(folder))
-filenames_2 = filter(pattern_2.match, os.listdir(folder_2))
-#func: find duplicates in NO folder
-for n,filename in enumerate(filenames_2):
-	for m,filename_2 in enumerate(filenames_2[n+1:len(filenames_2)]):
-		if filename == filename_2:
-			print("ERROR: found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
-			sys.exit("found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
-print(filenames)
+#filenames_2 = filter(pattern_2.match, os.listdir(folder_2))
+filenames_2 =  os.listdir(folder_2)
 print(filenames_2)
-#func: checks for same amount of images in both input folders
-if len(filenames) == len(filenames_2):
-	filenames_3=filenames+filenames_2
-else:
-	print("ERROR: not an equal number of files in each folder")
-	sys.exit("not an equal number of files in each folder")
-	#need to kill code here so that they can delete duplicate
+for filename in filenames_2:
+	filename = folder_2+"/"+filename
+#	print(filename)
+	if os.path.isdir(filename):
+		print("hey")
+		NO_folder_list.append(filename)
+
+def find_z_scale(filename):
+	match = re.findall("(\d)",filename)
+	return match[z_axis_start]
+											
+print(NO_folder_list)
+for i in NO_folder_list:
+	NO_file=filter(pattern_2.match, os.listdir(i))
+	filenames_NO=filenames_NO + NO_file
+	
+	print(filenames_NO)
+print(filenames_NO)
+print(filenames_NO.sort())
+filenames_3=filenames+filenames_NO
 print(filenames_3)
 
-#Creates a TrakEM2 project
-project = Project.newFSProject("blank", None, joint_folder)
-#got to figure out if it is a new project or not
-# OR: get the first open project
-# project = Project.getProjects().get(0)
-
-#work in progress
-#threading for image crop, invert, scale
-exe = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-#print(exe)
-
-#print(project.adjustProperties()[0])
-#print(project.getProperty(("Number_of_threads_for_mipmaps")))
-#print(project.getProperty(("Autosave_every")))
-#print(project.setProperty("Number_of_threads_for_mipmaps", "2"))
-
-#adjust properties window
-project.adjustProperties()
-
-#print(project)
-#creates initial collection of layers variable
-layerset = project.getRootLayerSet()
-
-#func: rescaling 
-#open OV image stack
-imp = plugin.FolderOpener.open(folder, "virtual");
-title=imp.getTitle()
-print(imp.getDimensions())
-width=imp.getDimensions()[0]*size
-height=imp.getDimensions()[1]*size
-#resize images
-imp = imp.resize(width, height, "none");
-print(imp.getDimensions())
-#multiple files
-#mac or windows
-if windows:
-	if imp.getDimensions()[3] != 1:
-		plugin.StackWriter.save(imp, output_scaled+"\\", "format=tiff");
-	#one file
-	elif imp.getDimensions()[3] == 1:
-		IJ.saveAs(imp, "Tiff", output_scaled+"\\"+title);
-elif not windows:
-	if imp.getDimensions()[3] != 1:
-		plugin.StackWriter.save(imp, output_scaled+"/", "format=tiff");
-	#one file
-	elif imp.getDimensions()[3] == 1:
-		IJ.saveAs(imp, "Tiff", output_scaled+"/"+title);
-
-
-# ... and update the LayerTree:
-#project.getLayerTree().updateList(layerset)
-#works without this...
-# ... and the display slider
-#Display.updateLayerScroller(layerset)
-#works without this...
-
-#Creates a layer for each image in folder 1 stack 
-#and
-#since filenames are integers, finds smallest integer from where to start iterating from
-
-for n, filename in enumerate(filenames):
-#	print(filename)
-	layerset.getLayer(n, 1, True)
-	match = re.findall("(\d)",filename)
-	if n == 0:
-		n_start=int(match[z_axis_start])
-	elif n != 0 :
-		num=int(match[z_axis_start])
-		if num < n_start:
-			n_start=int(match[z_axis_start])
-#print/(n_start)
-
-#for i in range(len(filenames)):
-#	layerset.getLayer(i, 1, True)
-#
+for  n, filename in enumerate(filenames_3):
+	for m, filename_2 in enumerate(filenames_3[n+1:len(filenames_3)]):
+#		print(n,m+n+1)
+		match = re.findall("(\d)",filename)
+		match_2 = re.findall("(\d)",filename_2)
+		print(filename,filename_2)
+		if match > match_2:
+			temp_1=filename
+			temp_2=filename_2
+#			hey=filenames_3.index(temp_1)
+#			print(hey)
+#			bye=filenames_3.index(temp_2)
+#			print(bye)
+#			print(filename,filename_2)
+			print(filename,filename_2)
+#			print(filenames_3[hey], filenames_3[bye])
+			filename=temp_2
+			filename_2=temp_1
+			filenames_3[n]=temp_2
+			filenames_3[n+m+1]=temp_1
+			print(filename,filename_2)
+#			print(filenames_3[hey], filenames_3[bye])
+			print(filenames_3)
+			
 #for n, filename in enumerate(filenames_3):
-##	print(filename)
-#	match = re.findall("(\d)",filename)
-#	if n == 0:
-#		n_start=int(match[0])
-#	elif n != 0 :
-#		num=int(match[0])
-#		if num < n_start:
-#			n_start=int(match[0])
-#print/(n_start)
+#	for m,filename_2 in enumerate(filenames_3[n+1:len(filenames_3)]):
+#		print(n,m+n+1)
+#		match = re.findall("(\d)",filenames_3[n])
+#		match_2 = re.findall("(\d)",filenames_3[m])
+#		#	print(filename)
+#		#	layerset.getLayer(n, 1, True)
+#		if n == 0:
+#			n_start=int(match[z_axis_start])
+#		elif n != 0 :
+#			num=int(match[z_axis_start])
+#			if num < n_start:
+#				n_start=int(match[z_axis_start])
+#		if match > match_2:
+#			temp_1=filename
+#			temp_2=filename_2
+##			print(filename,filename_2)
+#			print(filenames_3[n],filenames_3[m], n, m+n+1)
+#			filenames_3[n]=temp_2
+#			filenames_3[m]=temp_1
+#			print(filenames_3[n],filenames_3[m], n, m+n+1)
 
+#print(filenames_NO)
+
+
+#	NO_folder_dict[i]=filenames_2
+#
+print(filenames_3)
+##print(NO_folder_dict)
+#
+#
+#project = Project.newFSProject("blank", None, joint_folder)
+#
+##print(project)
+##creates initial collection of layers variable
+#layerset = project.getRootLayerSet()
+#
+#
 #populates layers with OV and NO images
-for i,layer in enumerate(layerset.getLayers()):
-	# EDIT the following pattern to match the filename of the images
-	pattern_v2 = re.compile(pattern_v2_p1 + str(n_start+i) + pattern_v2_p2)
-	for filename in filter(pattern_v2.match, filenames_3):
-#    print(pattern.match,i)
-#    print(filename)
-		if filename in filenames:
-#			print(filename)
-			filepath = os.path.join(folder, filename)
-			patch = Patch.createPatch(project, filepath)
-			layer.add(patch)
-#			print(filepath)
-		if filename in filenames_2:
-#			print(filename)
-			filepath = os.path.join(folder_2, filename)
-			patch = Patch.createPatch(project, filepath)
-			layer.add(patch)
-#			print(filepath)
-#	print(filepath, patch, layer)
-# 	 Update internal quadtree of the layer
-#	need to find out what this does
-	layer.recreateBuckets()
+#for i,layer in enumerate(layerset.getLayers()):
+#	# EDIT the following pattern to match the filename of the images
+#	num=3*(i+1)-1
+#	
+#	
+#	pattern_v2 = re.compile(pattern_v2_p1 + str(n_start+i) + pattern_v2_p2)
+#	for filename in filter(pattern_v2.match, filenames_3):
+##    print(pattern.match,i)
+##    print(filename)
+#		if filename in filenames:
+##			print(filename)
+#			filepath = os.path.join(folder, filename)
+#			patch = Patch.createPatch(project, filepath)
+#			layer.add(patch)
+##			print(filepath)
+#		if filename in filenames_2:
+##			print(filename)
+#			filepath = os.path.join(folder_2, filename)
+#			patch = Patch.createPatch(project, filepath)
+#			layer.add(patch)
+##			print(filepath)
+##	print(filepath, patch, layer)
+## 	 Update internal quadtree of the layer
+##	need to find out what this does
+#	layer.recreateBuckets()
+#
+#
 
 #Montages/aligns each layer
 param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
