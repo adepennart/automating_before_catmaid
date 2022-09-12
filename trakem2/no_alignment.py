@@ -64,8 +64,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 """
 
 #@ File (label = "OV directory", style = "directory") folder
-#@ File (label = "NO directory", style = "directory") folder_2
-#@ File (label = "NO_2 directory(not needed)", required=False style = "directory") folder_3
+#@ File (label = "NO directory or parent directory only containing NO directories", style = "directory") folder_2
 #@ File (label = "interim directory", style = "directory") output_scaled
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
