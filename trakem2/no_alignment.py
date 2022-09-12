@@ -1,37 +1,48 @@
-#run("TrakEM2 (blank)", "select=/Users/Auguste/Desktop/ex_image_stack/trakem2.1659102927438.226972917.1006530210");
-# Albert Cardona 2011-06-05
-# Script for Colenso Speer
+"""
+Title: no_alignment.py
 
-#@ File (label = "Input directory", style = "directory") folder
-#@ File (label = "Input directory 2 (if needed)", style = "directory", required= False) folder_2
-#obselete
-#@ File (label = "interim directory", style = "directory") output_scaled
-##@ int (label = "layer_count", value=5, min=1, max=10, style=slider ) layers
-#@ File (label = "Output directory", style = "directory") output_dir
-#@ String (label = "project name") project_name
-#@ String(choices={".GRAY8", ".GRAY16", ".GRAY32", ".COLOR_RGB"}, style="list") export_type
-#@ boolean (label = "Don't invert images") inverted_image
-#Tile_002-001-001842_0-000.s1853_e01.tif
-#DO THIS
-#should be able to count layers in file
-#only accepts tif files as input
-#invert at beginning
-#rescale at beginning 
-# crop at beginning
+Date: September 7th, 2022
 
-import os, re
-from ij import IJ, ImagePlus, plugin
-from ini.trakem2 import Project
-from ini.trakem2.display import Display, Patch
-from ini.trakem2.imaging import Blending
-from ij.io import FileSaver
-from java.awt import Color
-from mpicbg.ij.clahe import Flat
+Author: Auguste de Pennart
 
+Description:
+	aligns the noduli high resolution images to the overview low resolution images 
+
+List of functions:
+    No user defined functions are used in the program.
+
+List of "non standard modules"
+	No non standard modules are used in the program.
+
+Procedure:
+    1. multiple checks to ensure function
+    2. scales OV stack to 4x magnification
+    3. creates trakem2 project
+    4. creates layers and populates with one image from OV and from NO folders
+    5. aligns them/montages them
+    6. exports NO images
+
+Usage:
+	to be used through Imagej as a script
+	Pressing the bottom left Run button in the Script window will begin script
+
+known error:
+    1. only accepts tif files as input
+    2. does not invert images,
+    3. does not crop images
+    4. should open project earlier
+    5. should check if interim folder full (kind of does)
+    6. get more threads for resizing step
+    7. allow for pattern choice, and whether windows machine or not
+    8. should open project, if already opened
+    9. have time stamps
+  
+    
+loosely based off of Albert Cardona 2011-06-05 script
+
+#useful links
 #upload to catmaid
 #https://github.com/benmulcahy406/script_collection/blob/main/TrakEM2_export_selected_arealists_to_obj.pys
-
-
 
 #could be useful for setting threads
 #example code
@@ -50,65 +61,56 @@ from mpicbg.ij.clahe import Flat
 #purger_thread.scheduleWithFixedDelay(free, 0, RELEASE_EVERY, TimeUnit.SECONDS)
 #log("scheduled purge")
 
-if export_type == ".GRAY8":
-	export_type=0
-elif export_type == ".GRAY16":
-	export_type=1
-elif export_type == ".GRAY32":
-	export_type=2
-elif export_type == ".COLOR_RGB":
-	export_type=4
+"""
 
-#variable
+#@ File (label = "OV directory", style = "directory") folder
+#@ File (label = "NO directory", style = "directory") folder_2
+#@ File (label = "NO_2 directory(not needed)", required=False style = "directory") folder_3
+#@ File (label = "interim directory", style = "directory") output_scaled
+#@ File (label = "Output directory", style = "directory") output_dir
+#@ String (label = "project name") project_name
+#@ boolean (label = "Don't invert images") inverted_image
+#@ int (label = "rescale OV factor", default=4, min=0, max=10 ) size
+#@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
+#@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
+#@ boolean (label = "using a windows machine") windows
+
+
+
+
+# import modules
+# ----------------------------------------------------------------------------------------
+import os, re, sys
+from ij import IJ, ImagePlus, plugin
+from ini.trakem2 import Project
+from ini.trakem2.display import Display, Patch
+from ini.trakem2.imaging import Blending
+from ij.io import FileSaver
+#for aligning/montaging
+from mpicbg.trakem2.align import Align, AlignTask
+#for exporting
+from java.awt import Color
+from mpicbg.ij.clahe import Flat
+#for gui
+#https://mirror.imagej.net/developer/api/ij/gui/
+from ij.gui import GenericDialog
+#could be useful for threads
+from java.lang import Runtime
+from java.util.concurrent import Executors
+
+
+# variables
+# --------------------------------------------------------------------------------------
 joint_folder=[]
-pattern = re.compile(".*_z[\d]_.*\.tif")
-#for line 170 to work with one input folder
-filenames_2=""
-
-#folder = "/path/to/folder/with/all/images/"
-#print(type(folder))
-folder = folder.getAbsolutePath()
-if folder_2:
-	folder_2 = folder_2.getAbsolutePath()
-	print(folder_2)
-#print(type(folder))
-print(folder)
-#folder = "/Users/Auguste/Desktop/ex_image_stack/trakem2"
-#print(type(output_dir))
-output_dir = output_dir.getAbsolutePath()
-print(type(output_dir))
-
-match_1=re.findall("\/.[^\/]+",folder)
-if folder_2:
-	match_2=re.findall("\/.[^\/]+",folder_2)
-#print(match_1)
-#print(match_2)
-
-if folder_2:
-	if match_1[len(match_1)-1] == match_2[len(match_2)-1]:
-	#	print("woot",match_1[len(match_1)-1],match_2[len(match_2)-1])
-		joint_folder=match_1
-	elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
-	#	print("sad",match_1[len(match_1)-1],match_2[len(match_2)-1])
-		for fold in reversed(match_1):
-			if fold in match_2:
-	#			print(fold,"found")
-	#			fold_good=re.search("(\/.[^\/]+)",fold).group(0)
-	#			joint_folder.insert(0,fold_good)	
-				joint_folder.insert(0,fold)
-	#print((joint_folder))
-	#		if fold 
-	joint_folder="".join(joint_folder)
-#print((joint_folder))
-elif not folder_2:
-	joint_folder=match_1
-	joint_folder="".join(joint_folder)
-
-#set threads
-
-#gaussian_blur
+pattern_1 = re.compile(".*_z[\d]_.*\.tif")
+#pattern_1 = re.compile("([\d]+).*\.tif")
+pattern_2 = re.compile(".*_z[\d]_.*\.tif")
+#pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
+pattern_v2_p1 = (".*_z")
+pattern_v2_p2 = ("_.*\.tif")
+z_axis_start=0 #z axis number in filename
+#additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=2
-#CLAHE
 blocksize = 50
 histogram_bins = 128
 maximum_slope = 3
@@ -117,147 +119,167 @@ fast = True
 process_as_composite = False
 composite = False
 mask = None
+#export image variables (MakeFlatImage)
+export_type=0 #GRAY8
+scale = 1.0
+backgroundColor = Color.black
 
-# 3. To each layer, add images that have "_zN_" in the name
-#     where N is the index of the layer
-#     and also end with ".tif"
-filenames = filter(pattern.match, os.listdir(folder))
-for n,filename in enumerate(filenames):
-	for m,filename_2 in enumerate(filenames[n+1:len(filenames)]):
+#redefine model_index variables
+if model_index == "translation":
+	model_index=0
+elif model_index == "rigid":
+	model_index=1
+elif model_index == "similarity":
+	model_index=2
+elif model_index == "affine":
+	model_index=3
+
+#func: get string of folder paths
+folder = folder.getAbsolutePath()
+folder_2 = folder_2.getAbsolutePath()
+output_scaled = output_scaled.getAbsolutePath()
+output_dir = output_dir.getAbsolutePath()
+#print(folder)
+#print(folder_2)
+#print(output_scaled)
+#print(output_dir)
+
+
+#func: finds mutual folder between both input folders
+#finds all the parent directories of the input folders
+if windows:
+	match_1=re.findall(".[^\\\\]+",folder)
+	match_2=re.findall(".[^\\\\]+",folder_2)
+elif not windows:
+	match_1=re.findall("\/.[^\/]+",folder)
+	match_2=re.findall("\/.[^\/]+",folder_2)
+#print(match_1)
+#print(match_2)
+
+#check for the same folder and if dfferent folder finds mutual parent folders
+if match_1[len(match_1)-1] == match_2[len(match_2)-1]:
+	print("ERROR: same folder selected for OV and NO" )
+	sys.exit("same folder selected for OV and NO" )
+elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
+	for Folder in reversed(match_1):
+		if Folder in match_2:
+			joint_folder.insert(0,Folder)
+joint_folder="".join(joint_folder)
+#print(joint_folder)
+
+#func: find files in input directories
+filenames = filter(pattern_1.match, os.listdir(folder))
+filenames_2 = filter(pattern_2.match, os.listdir(folder_2))
+#func: find duplicates in NO folder
+for n,filename in enumerate(filenames_2):
+	for m,filename_2 in enumerate(filenames_2[n+1:len(filenames_2)]):
 		if filename == filename_2:
-			print("found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
-			#need to kill code here so that they can delete duplicate
-#		for num in range(0,len(filename)):
-#			if filename[num] == filename_2[num]:
-##				print(filename, filename_2,filename[num])
-#				if filename[num] == len(filename):
-#					print("found duplicate ", filename, filename_2, " at", n, m )
-#			elif filename[num] != filename_2[num]:
-#				break
-if folder_2:
-	filenames_2 = filter(pattern.match, os.listdir(folder_2))
-	#print(filenames)
-	if len(filenames) == len(filenames_2):
-		filenames_3=filenames+filenames_2
-	else:
-		print("not an equal number of files in each folder")
-		#need to kill code here so that they can delete duplicate
-elif not folder_2:
-	filenames_3=filenames
+			print("ERROR: found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
+			sys.exit("found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
+print(filenames)
+print(filenames_2)
+#func: checks for same amount of images in both input folders
+if len(filenames) == len(filenames_2):
+	filenames_3=filenames+filenames_2
+else:
+	print("ERROR: not an equal number of files in each folder")
+	sys.exit("not an equal number of files in each folder")
+	#need to kill code here so that they can delete duplicate
 print(filenames_3)
 
-#project=IJ.run("TrakEM2 (blank)", "select=/Users/Auguste/Desktop/ex_image_stack/trakem2")
-#project=IJ.run("TrakEM2 (blank)")
-#Project.newFSProject("blank", None, folder)
-# 1. Create a TrakEM2 project
+#Creates a TrakEM2 project
 project = Project.newFSProject("blank", None, joint_folder)
-#project = Project.newFSProject("blank", None)
+#got to figure out if it is a new project or not
 # OR: get the first open project
 # project = Project.getProjects().get(0)
 
+#work in progress
+#threading for image crop, invert, scale
+exe = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+#print(exe)
+
+#print(project.adjustProperties()[0])
+#print(project.getProperty(("Number_of_threads_for_mipmaps")))
+#print(project.getProperty(("Autosave_every")))
+#print(project.setProperty("Number_of_threads_for_mipmaps", "2"))
+
+#adjust properties window
+project.adjustProperties()
 
 #print(project)
+#creates initial collection of layers variable
 layerset = project.getRootLayerSet()
-##print(layerset)
-##  2. Create 10 layers (or as many as you need)
-##picks layer 0 even if there isn't one
-#for i in range(layers):
-#	layerset.getLayer(i, 1, True)
-##  layerset.getLayer(i, 0, True)
 
-
+#func: rescaling 
+#open OV image stack
 imp = plugin.FolderOpener.open(folder, "virtual");
 title=imp.getTitle()
-dimen=IJ.getScreenSize()
-print(dimen.width,dimen.height)
 print(imp.getDimensions())
-width=imp.getDimensions()[0]*4
-height=imp.getDimensions()[1]*4
+width=imp.getDimensions()[0]*size
+height=imp.getDimensions()[1]*size
+#resize images
 imp = imp.resize(width, height, "none");
 print(imp.getDimensions())
-#IJ.saveAs(imp, "Tiff", folder+"/"+"ov_z1_-1.tif");
-#IJ.saveAs(imp, "Tiff", folder+"/"+"ov_z1_.tif");
-#IJ.saveAs(imp, "Tiff", folder);
-output_scaled = output_scaled.getAbsolutePath()
-title=imp.setTitle("")
-#what if one file
-if imp.getDimensions()[3] != 1:
-	plugin.StackWriter.save(imp, output_scaled+"/", "format=tiff");
-#IJ.saveAs(imp, "Tiff", output_scaled+"/"+title);
-elif imp.getDimensions()[3] == 1:
-	IJ.saveAs(imp, "Tiff", output_scaled+"/"+title);
+#multiple files
+#mac or windows
+if windows:
+	if imp.getDimensions()[3] != 1:
+		plugin.StackWriter.save(imp, output_scaled+"\\", "format=tiff");
+	#one file
+	elif imp.getDimensions()[3] == 1:
+		IJ.saveAs(imp, "Tiff", output_scaled+"\\"+title);
+elif not windows:
+	if imp.getDimensions()[3] != 1:
+		plugin.StackWriter.save(imp, output_scaled+"/", "format=tiff");
+	#one file
+	elif imp.getDimensions()[3] == 1:
+		IJ.saveAs(imp, "Tiff", output_scaled+"/"+title);
+
 
 # ... and update the LayerTree:
-project.getLayerTree().updateList(layerset)
+#project.getLayerTree().updateList(layerset)
+#works without this...
 # ... and the display slider
-Display.updateLayerScroller(layerset)
+#Display.updateLayerScroller(layerset)
+#works without this...
 
-#  2. Create 10 layers (or as many as you need)
-#picks layer 0 even if there isn't one
-if filenames_2:
-	for i in range(len(filenames)):
-		layerset.getLayer(i, 1, True)
-#this is correct
-#elif not filenames_2:
-#	for i in range(len(filenames)/2):
-#		layerset.getLayer(i, 1, True)
-#this is incorrect
-elif not filenames_2:
-	for i in range(len(filenames)):
-		layerset.getLayer(i, 1, True)
-		#assumes only two different layers
-	
-	
-#for filename in filenames_3:
+#Creates a layer for each image in folder 1 stack 
+#and
+#since filenames are integers, finds smallest integer from where to start iterating from
+
+for n, filename in enumerate(filenames):
 #	print(filename)
-#	#find another matching code
-#	match = re.findall("(\d)",filename)
-##	for some reason does not work
-##	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
-#	n_start=int(match[1])
-#	print(n_start)
-#	break
-
-for n, filename in enumerate(filenames_3):
-	print(filename)
-	#find another matching code
+	layerset.getLayer(n, 1, True)
 	match = re.findall("(\d)",filename)
-#	for some reason does not work
-#	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
-#	if n == 0:
-#		n_start=int(match[1])
-#	elif n != 0 :
-#		num=int(match[1])
-#		if num < n_start:
-#			n_start=int(match[1])
-#only one number here
 	if n == 0:
-		n_start=int(match[0])
+		n_start=int(match[z_axis_start])
 	elif n != 0 :
-		num=int(match[0])
+		num=int(match[z_axis_start])
 		if num < n_start:
-			n_start=int(match[0])
-print(n_start)
-	
-			
-#for filename in filenames_3:
-#	filename.encode('ascii','ignore')
+			n_start=int(match[z_axis_start])
+#print/(n_start)
 
-##.*-([\d]{3})-.*\.tif
-#for filename in filenames_3:
-#	print(filename)
-#	if re.search(".*_z\d_.*\.tif",filename):
-#	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
+#for i in range(len(filenames)):
+#	layerset.getLayer(i, 1, True)
+#
+#for n, filename in enumerate(filenames_3):
+##	print(filename)
+#	match = re.findall("(\d)",filename)
+#	if n == 0:
+#		n_start=int(match[0])
+#	elif n != 0 :
+#		num=int(match[0])
+#		if num < n_start:
+#			n_start=int(match[0])
+#print/(n_start)
 
+#populates layers with OV and NO images
 for i,layer in enumerate(layerset.getLayers()):
 	# EDIT the following pattern to match the filename of the images
-	# that must be inserted into section at index i:
-	#will have to get input from user what the start file is
-	pattern = re.compile(".*_z" + str(n_start+i) + "_.*\.tif")
-	for filename in filter(pattern.match, filenames_3):
+	pattern_v2 = re.compile(pattern_v2_p1 + str(n_start+i) + pattern_v2_p2)
+	for filename in filter(pattern_v2.match, filenames_3):
 #    print(pattern.match,i)
 #    print(filename)
-#		filepath = os.path.join(folder, filename)
 		if filename in filenames:
 #			print(filename)
 			filepath = os.path.join(folder, filename)
@@ -266,74 +288,24 @@ for i,layer in enumerate(layerset.getLayers()):
 #			print(filepath)
 		if filename in filenames_2:
 #			print(filename)
-#			filepath_2 = os.path.join(folder_2, filename)
-#			print(filepath_2)
 			filepath = os.path.join(folder_2, filename)
 			patch = Patch.createPatch(project, filepath)
 			layer.add(patch)
 #			print(filepath)
-#	filepath=filepath+filepath_2
-#	print(filepath)
-#    print(patch)
-#    print(layer)
+#	print(filepath, patch, layer)
 # 	 Update internal quadtree of the layer
+#	need to find out what this does
 	layer.recreateBuckets()
-#
-#for i,layer in enumerate(layerset.getLayers()):
-#  # EDIT the following pattern to match the filename of the images
-#  # that must be inserted into section at index i:
-#  pattern = re.compile(".*_z" + str(i) + "_.*\.tif")
-#  for filename in filter(pattern.match, filenames):
-##    print(pattern.match,i)
-##    print(filename)
-#    filepath = os.path.join(folder, filename)
-##		if filename in os.path.join(folder, filename):
-##	  		filepath = os.path.join(folder, filename)
-##	  		print(filepath)
-##		if filename in os.path.join(folder_2, filename):
-##	  		filepath_2 = os.path.join(folder_2, filename)
-##	  		print(filepath_2)
-##    	filepath=filepath+filepath_2
-#    print(filepath)
-#    patch = Patch.createPatch(project, filepath)
-#    layer.add(patch)
-#    print(patch)
-##    print(layer)
-#  # Update internal quadtree of the layer
-#  layer.recreateBuckets()
 
-# 4. Montage each layer independently
-from mpicbg.trakem2.align import Align, AlignTask
-from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
-from java.util import HashSet
-
-#Align.alignLayersLinearly(layerset.getLayers(),1)
-#for layer in layerset.getLayers():
-#	tiles = layer.getDisplayables(Patch)
-##	fix so that set patches can be determined
-##  	0=linear sift correspondance
-#	tiles[0].setLocked(True)
-#	Align.alignLayer(layer, 1)
-param = Align.ParamOptimize(desiredModelIndex=0,expectedModelIndex=0)  # which extends Align.Param
-param.sift.maxOctaveSize = 512
+#Montages/aligns each layer
+param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
+param.sift.maxOctaveSize = octave_size
 for layer in layerset.getLayers():
-  	tiles = layer.getDisplayables(Patch)
-#	fix so that set patches can be determined
-#  	0=linear sift correspondance
-#	non_move = {tiles[0]}
-#	tiles[0].scale(
-#		0,
-#		0,
-#		0,
-#		0)
-	layerset.setMinimumDimensions()
-	tiles[0].setLocked(True)
-	non_move = [tiles[0]]
-#	non_move = []
-#	AlignTask.alignPatches(tiles,non_move,0)
-#	AlignTask.alignMultiLayerMosaicTask(layer,non_move)
-#AlignTask(tilesAreInPlace=False)
-#	AlignTask.tilesAreInPlace=False
+  	tiles = layer.getDisplayables(Patch) #get list of tiles
+	layerset.setMinimumDimensions() #readjust canvas size
+	tiles[0].setLocked(True) #lock the OV stack
+	non_move = [tiles[0]] #i believe tihs is what they are looking for
+	#montage or align?
 	AlignTask.alignPatches(
 	param,
 	tiles,
@@ -343,142 +315,52 @@ for layer in layerset.getLayers():
 	False,
 	False) 
 
-#select actually imports, just copied
-#https://github.com/templiert/ufomsem/blob/79a02010533f8127deeb0fed04cfc1ea90edb7f0/stitch_align.py
-#import os, time, sys
-#from ij import IJ, Macro
-#import java
-#from java.lang import Runtime
-#from java.awt import Rectangle
-#from java.awt.geom import AffineTransform
-#from java.util import HashSet
-#from ini.trakem2 import Project, ControlWindow
-#from ini.trakem2.display import Patch, Display
-#from ini.trakem2.imaging import StitchingTEM
-#from ini.trakem2.imaging.StitchingTEM import PhaseCorrelationParam
-#from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
+# readjusts canvas size to alignment/montage
+#layerset.setMinimumDimensions() #useful in OV script
+#roi=layerset.get2DBounds() # was useful for saving NO in 2D space
 
-
-#param = RegularizedAffineLayerAlignment.Param()
-#param = Align.ParamOptimize(desiredModelIndex=0,expectedModelIndex=0)  # which extends Align.Param
-#param = Align.ParamOptimize()  # which extends Align.Param
-#param.sift.maxOctaveSize = 512
-#param.ppm.sift.maxOctaveSize = 512
-#fixedLayers = HashSet()
-#for i in range(len(layerset.getLayers())):
-#    fixedLayers.add(layerset.getLayers().get(i))
-
-#emptyLayers = HashSet()
-
-#layerRange = layerset.getLayers(len(layerset.getLayers())-1,len(layerset.getLayers()))
-#layerRange = layerset.getLayers(len(layerset.getLayers())-2,len(layerset.getLayers())-1)
-#  ... above, adjust other parameters as necessary
-# See:
-#    features: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.Param.html
-#    transformation models: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.ParamOptimize.html
-#    sift: https://fiji.sc/javadoc/mpicbg/imagefeatures/FloatArray2DSIFT.Param.
-#print("hey")
-#print(layerRange)
-#print(param)
-#AlignTask.montageLayers(param, layerset.getLayers(), False, False, False, False)
-#RegularizedAffineLayerAlignment().exec(
-#        param,
-#        layerRange,	
-#        fixedLayers,
-#        emptyLayers,
-#        layerset.get2DBounds(),
-#        False,
-#        False,
-#        None)
-# 5. Resize width and height of the world to fit the montages
-layerset.setMinimumDimensions()
-roi=layerset.get2DBounds()
-
-# 6. Blend images of each layer
+# Blends images of each layer
+#if blending wanted, this would be later between layers
 #Blending.blendLayerWise(layerset.getLayers(), True, None)
 
-#front = Display.getFront() # the active TrakEM2 display window
-#layer = front.getLayer()
-#tiles = layer.getDisplayables(Patch)
-##tiles = front.getSelection().get(Patch)  # selected Patch instances only
-#backgroundColor = Color.black
-#scale = 1.0
+gui = GenericDialog("Aligned?")
+gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
+gui.showDialog()
 #
-##roi=Patch.getBoundingBox()	
-#print(front)
-#print(layer)
-#print(Patch)
-#print(tiles)
-#
-#roi = tiles[0].getBoundingBox()
-#for tile in tiles[1:]:
-#	roi.add(tile.getBoundingBox())
-#		
-#ip = Patch.makeFlatImage(
-#          ImagePlus.GRAY16,
-#           layer,
-#           roi,
-#           scale,
-#           tiles,
-#          backgroundColor,
-#          True)  # use the min and max of each tileimp = ImagePlus("Flat montage", ip)
-#imp = ImagePlus("Flat montage", ip)
-#imp.show() 
+project.saveAs(os.path.join(joint_folder, project_name+"with_OV"), False)
+#if gui.wasOKed():
+#    inString = gui.getNextString()
+#    inBool   = gui.getNextBoolean()
+#    inChoice = gui.getNextChoice() # one could alternatively call the getNextChoiceIndex too
+#    inNum    = gui.getNextNumber() # This always return a double (ie might need to cast to int)
+#some sort of if statement if a decision to realign with 200 higher parameters is needed
 
-#project = Project.getProjects()[0]
-#layerset = project.getRootLayerSet()
+#removes the OV tile
+for i, layer in enumerate(layerset.getLayers()):
+	tiles = layer.getDisplayables(Patch)
+	tiles[0].remove(False)
+layerset.setMinimumDimensions() #readjust canvas to only NO tiles
 
-#front = Display.getFront(project)
-#roi = front.getRoi()
-#roi=roi.getBoundingBox()
-scale = 1.0
-backgroundColor = Color.black
-
-# NOTE: EDIT THIS PATH
-targetDir = output_dir
-
-#For other output types, use ImagePlus.GRAY8, .GRAY16, GRAY32 or .COLOR_RGB, as listed in the documentation for the ImagePlus class.
-
-#this may not be what we are looking for as roi is the bonding box
-#for i, layer in enumerate(layerset.getLayers()):
-##  print(layer)
-#  # Export the image here, e.g.:
-#  tiles = layer.getDisplayables(Patch)
-#  roi = tiles[0].getBoundingBox()
-#  for tile in tiles[1:]:
-#  	roi.add(tile.getBoundingBox())
-#  ip = Patch.makeFlatImage(
-#           export_type,
-#           layer,
-#           roi,
-#           scale,
-#           tiles,
-#           backgroundColor,
-#           True)  # use the min and max of each tile
-
+#exports images
 for i, layer in enumerate(layerset.getLayers()):
 #  print(layer)
-  # Export the image here, e.g.:
-#  roi=layer.getMinimalBoundingBox()
-#  roi=roi.getBoundingBox()
   tiles = layer.getDisplayables(Patch)
 #  print(tiles)
-#  roi = tiles[0].getBoundingBox()
-#  for tile in tiles[1:]:
-#  	roi.add(tile.getBoundingBox())
+  roi = tiles[0].getBoundingBox() #needed in OV alignment
+  for tile in tiles[1:]:
+  	roi.add(tile.getBoundingBox())
+  	#image paramaters, i believe
   ip = Patch.makeFlatImage(
            export_type,
            layer,
            roi,
            scale,
-           tiles,
+           [tiles[0]], # only getting NO patch
            backgroundColor,
            True)  # use the min and max of each tile
 
-  imp = ImagePlus("Flat montage", ip)
-  #invert
-  if inverted_image == 0:
-  	imp.getProcessor().invert()
+  imp = ImagePlus("Flat montage", ip) #creates image
+  #unsure if we need to correct for Gaussianblur
 #  imp.getProcessor().blurGaussian(sigmaPixels)
 #pretty sure 3 refers to median_filter
 #https://imagej.nih.gov/ij/developer/api/ij/ij/process/ImageProcessor.html#filter(int)
@@ -489,10 +371,9 @@ for i, layer in enumerate(layerset.getLayers()):
 #                        maximum_slope,
 #                        mask,
 #                        composite )
-  FileSaver(imp).saveAsTiff(targetDir + "/" + str(i + 1) + ".tif")
+  FileSaver(imp).saveAsTiff(output_dir + "/" + str(i + 1) + ".tif") #saves file to output directory
 
-## 7. Save the project
-project.saveAs(os.path.join(joint_folder, project_name), False)
-
+#Saves the project
+project.saveAs(os.path.join(joint_folder, project_name+"without_OV"), False)
 
 print("Done!")
