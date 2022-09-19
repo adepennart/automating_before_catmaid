@@ -110,7 +110,6 @@ pattern_v2_p1 = (".*_z")
 pattern_v2_p2 = ("_.*\.tif")
 z_axis_start=0 #z axis number in filename
 NO_folder_list=[]
-#filenames_dict={}
 filenames_keys=[]
 filenames_values=[]
 filenames_NO=[]
@@ -173,8 +172,6 @@ joint_folder="".join(joint_folder)
 print(joint_folder)
 
 #func: find files in input directories
-#filenames = filter(pattern_1.match, os.listdir(folder))
-#filenames_2 = filter(pattern_2.match, os.listdir(folder_2))
 NO_folder_list.append(folder)
 filenames_2 =  os.listdir(folder_2)
 print(filenames_2)
@@ -214,26 +211,19 @@ for i in NO_folder_list:
 #				print(filename,filename_2)
 	filenames_keys.append(i)
 	filenames_values.append(NO_file)
-#	filenames_dict[i]=NO_file
-#print(filenames_dict)
 print(filenames_keys,filenames_values)
 
 	
 	
 #func: find duplicates in NO folder, should look in all foldesr
-#for i, fold in enumerate(filenames_dict):
 for i, fold in enumerate(filenames_keys):
 	if i ==0:
-#		length = len(filenames_dict[fold])
 		length = len(filenames_values[i])
 	elif i !=0:
-#		if length != len(filenames_dict[fold]):
 		if length != len(filenames_values[i]):
 			print("ERROR: not an equal number of files in each folder")
 			sys.exit("not an equal number of files in each folder")
-#	for n,filename in enumerate(filenames_dict[fold]):
 	for n,filename in enumerate(filenames_values[i]):
-#		for m,filename_2 in enumerate(filenames_dict[fold][n+1:len(filenames_dict[fold])]):
 		for m,filename_2 in enumerate(filenames_values[i][n+1:len(filenames_values[i])]):
 			if filename == filename_2:
 				print("ERROR: found duplicate", filename, filename_2, "at position", n+1, m+1, "in folder" )
@@ -298,12 +288,8 @@ if size == 1:
 		#one file
 		elif imp.getDimensions()[3] == 1:
 			IJ.saveAs(imp, "Tiff", output_scaled+"/"+title);
-#	for i, fold in enumerate(filenames_dict):
 	for i, fold in enumerate(filenames_keys):
 		if fold == folder:
-#			filenames_dict.pop(fold)
-#			filenames_keys.remove(fold)	
-#			filenames_values.remove(filenames_values[i])
 			#check
 			NO_file=filter(pattern_3.match, os.listdir(output_scaled))
 			for  n, filename in enumerate(NO_file):
@@ -320,10 +306,8 @@ if size == 1:
 						NO_file[n]=temp_2
 						NO_file[n+m+1]=temp_1
 		#				print(filename,filename_2)
-#			filenames_dict[output_scaled]=NO_file
 			filenames_keys[i] = output_scaled
 			filenames_values[i] = NO_file	
-#print(filenames_dict)			 
 print(filenames_keys,filenames_values)
 
 # ... and update the LayerTree:
@@ -337,77 +321,22 @@ print(filenames_keys,filenames_values)
 #and
 #since filenames are integers, finds smallest integer from where to start iterating from
 
-#
-#for  fold in filenames_dict:
-#	for n, filename in enumerate(filenames_dict[fold]):
-##	print(filename)
-#		layerset.getLayer(n, 1, True)
-#	pass
 for  m, fold in enumerate(filenames_keys):
 	for n, filename in enumerate(filenames_values[m]):
 #	print(filename)
 		layerset.getLayer(n, 1, True)
 	pass	
 	
-	
-#	match = re.findall("(\d)",filename)
-#	if n == 0:
-#		n_start=int(match[z_axis_start])
-#	elif n != 0 :
-#		num=int(match[z_axis_start])
-#		if num < n_start:
-#			n_start=int(match[z_axis_start])
-#print/(n_start)
-
-#for i in range(len(filenames)):
-#	layerset.getLayer(i, 1, True)
-#
-#for n, filename in enumerate(filenames_3):
-##	print(filename)
-#	match = re.findall("(\d)",filename)
-#	if n == 0:
-#		n_start=int(match[0])
-#	elif n != 0 :
-#		num=int(match[0])
-#		if num < n_start:
-#			n_start=int(match[0])
-#print/(n_start)
-
 #populates layers with OV and NO images
 for i,layer in enumerate(layerset.getLayers()):
-#	for fold in filenames_dict:
 	for n, fold in enumerate(filenames_keys):
 #		print(fold)
 #		print(filenames_dict[fold][i])
-#		filepath = os.path.join(fold, filenames_dict[fold][i])
 		filepath = os.path.join(fold, filenames_values[n][i])
 		patch = Patch.createPatch(project, filepath)
 		layer.add(patch)
 #		print(patch)
 	layer.recreateBuckets()
-
-#for i,layer in enumerate(layerset.getLayers()):
-#	# EDIT the following pattern to match the filename of the images
-#	pattern_v2 = re.compile(pattern_v2_p1 + str(n_start+i) + pattern_v2_p2)
-#	for filename in filter(pattern_v2.match, filenames_3):
-##    print(pattern.match,i)
-##    print(filename)
-#		if filename in filenames:
-##			print(filename)
-#			filepath = os.path.join(folder, filename)
-#			patch = Patch.createPatch(project, filepath)
-#			layer.add(patch)
-##			print(filepath)
-#		if filename in filenames_2:
-##			print(filename)
-#			filepath = os.path.join(folder_2, filename)
-#			patch = Patch.createPatch(project, filepath)
-#			layer.add(patch)
-##			print(filepath)
-##	print(filepath, patch, layer)
-## 	 Update internal quadtree of the layer
-##	need to find out what this does
-#	layer.recreateBuckets()
 
 #Montages/aligns each layer
 param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
