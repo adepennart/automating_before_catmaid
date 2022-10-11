@@ -36,6 +36,7 @@ known error:
     7. allow for pattern choice, and whether windows machine or not
     8. should open project, if already opened
     9. have time stamps
+    10.not cropped currently if not resizing
   
     
 loosely based off of Albert Cardona 2011-06-05 script
@@ -65,10 +66,13 @@ loosely based off of Albert Cardona 2011-06-05 script
 
 #@ File (label = "OV directory", style = "directory") folder
 #@ File (label = "NO directory or parent directory only containing NO directories", style = "directory") folder_2
-#@ File (label = "interim directory", style = "directory") output_scaled
+##@ File (label = "OV interim directory", style = "directory") output_scaled
+#this needs to be silent
+##@ File (label = "test interim directory", style = "directory",required=False) test_interim
+##@ File (label = "NO interim directory", style = "directory",required=False) output_inverted
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
-#@ boolean (label = "Don't invert images") inverted_image
+#@ boolean (label = "Invert images") inverted_image
 #@ int (label = "rescale OV factor", default=4, min=0, max=10 ) size
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
 #@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
@@ -101,10 +105,10 @@ from java.util.concurrent import Executors
 # variables
 # --------------------------------------------------------------------------------------
 joint_folder=[]
-pattern_1 = re.compile(".*_z[\d]_.*\.tif")
-#pattern_1 = re.compile("([\d]+).*\.tif")
-pattern_2 = re.compile(".*_z[\d]_.*\.tif")
-#pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
+#pattern_1 = re.compile(".*_z[\d]_.*\.tif")
+pattern_1 = re.compile("([\d]+).*\.tif")
+#pattern_2 = re.compile(".*_z[\d]_.*\.tif")
+pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
 pattern_3 = re.compile(".*[\d]*.tif")
 pattern_v2_p1 = (".*_z")
 pattern_v2_p2 = ("_.*\.tif")
@@ -113,6 +117,7 @@ NO_folder_list=[]
 filenames_keys=[]
 filenames_values=[]
 filenames_NO=[]
+
 #additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=2
 blocksize = 50
@@ -141,11 +146,14 @@ elif model_index == "affine":
 #func: get string of folder paths
 folder = folder.getAbsolutePath()
 folder_2 = folder_2.getAbsolutePath()
-output_scaled = output_scaled.getAbsolutePath()
+#output_scaled = output_scaled.getAbsolutePath()
+#output_inverted = output_inverted.getAbsolutePath()
 output_dir = output_dir.getAbsolutePath()
+
 #print(folder)
 #print(folder_2)
 #print(output_scaled)
+#print(output_inverted)
 #print(output_dir)
 
 
@@ -194,11 +202,11 @@ for i in NO_folder_list:
 	NO_file=filter(pattern_2.match, os.listdir(i))
 	if not NO_file:
  		NO_file=filter(pattern_1.match, os.listdir(i))
- 	print(NO_file)
+# 	print(NO_file)
 	for  n, filename in enumerate(NO_file):
 		for m, filename_2 in enumerate(NO_file[n+1:len(NO_file)]):
-			match = re.findall("(\d)",filename)
-			match_2 = re.findall("(\d)",filename_2)
+			match = int(re.findall("(\d+)",filename)[0])
+			match_2 = int(re.findall("(\d+)",filename_2)[0])
 #			print(filename,filename_2)
 			if match > match_2:
 				temp_1=filename
@@ -261,12 +269,141 @@ project.adjustProperties()
 #creates initial collection of layers variable
 layerset = project.getRootLayerSet()
 
+##func:  inverse
+#imp = plugin.FolderOpener.open(folder_2, "virtual");
+##imp.show()
+#print(imp)
+#title=imp.getTitle()
+#imp=imp.getProcessor().invert()
+#print(imp)
+##IJ.run("Invert", "");
+##IJ.run("Virtual Stack...", "output="+output_inverted+" text1=run(\"Invert\");\n");
+##elif not windows:
+##if imp.getDimensions()[3] != 1:
+##plugin.StackWriter.save(imp, output_inverted+"/", "format=tiff");
+#IJ.saveAs(imp, "Tiff", output_inverted+"/"+title);
+
+#func: invert
+if inverted_image:
+	output_inverted=os.path.join(joint_folder, "NO_interim")
+	try:
+		os.mkdir(output_inverted)
+	except OSError:
+		pass
+	for n, namefile in enumerate(filter(pattern_2.match,filenames_2)):
+#		print(n)
+		filepath = os.path.join(folder_2,namefile)
+		imp=IJ.openImage(filepath);
+		IJ.run(imp, "Invert", "");
+	#	imp=imp.getProcessor().invert()
+		IJ.saveAs(imp, "Tiff", output_inverted+"/"+str(n));
+		for i, fold in enumerate(filenames_keys):
+			if fold == folder_2:
+				#check
+				NO_file=filter(pattern_3.match, os.listdir(output_inverted))
+				for  n, filename in enumerate(NO_file):
+					for m, filename_2 in enumerate(NO_file[n+1:len(NO_file)]):
+						match = int(re.findall("(\d+)",filename)[0])
+						match_2 = int(re.findall("(\d+)",filename_2)[0])
+			#			print(filename,filename_2)
+						if match > match_2:
+							temp_1=filename
+							temp_2=filename_2
+			#				print(filename,filename_2)
+							filename=temp_2
+							filename_2=temp_1
+							NO_file[n]=temp_2
+							NO_file[n+m+1]=temp_1
+			#				print(filename,filename_2)
+				filenames_keys[i] = output_inverted
+				filenames_values[i] = NO_file	
+
 #func: rescaling 
 #open OV image stack
 #temporary fix
-if size == 1:
+if size != 1:
+#if size == 1:
+	test_interim=os.path.join(joint_folder, "test_trakem2")
+	try:
+		os.mkdir(test_interim)
+	except OSError:
+		pass
+	for num in range(1,len(filenames_keys)):
+		path=os.path.join(filenames_keys[num], filenames_values[num][0])
+		imp=IJ.openImage(path);
+		title=imp.getTitle()
+		print(imp.getDimensions())
+#		width=int(imp.getDimensions()[0]*(1/size))
+		width=int((imp.getDimensions()[0])*(float(1)/float(size)))
+#		height=int(imp.getDimensions()[1]*(1/size))
+		height=int((imp.getDimensions()[1])*(float(1)/float(size)))
+		print(width, height)
+		#resize images
+		imp = imp.resize(width, height, "none");
+		print(imp.getDimensions())
+		#multiple files
+		#mac or windows
+		test_interim = os.path.join(test_interim, "_"+str(num))
+		print(test_interim)
+		try:
+			os.mkdir(test_interim)
+		except OSError:
+			pass
+		if windows:
+			#one file
+			IJ.saveAs(imp, "Tiff", test_interim+"\\"+title);
+		elif not windows:
+			#one file
+			IJ.saveAs(imp, "Tiff", test_interim+"/"+title);
+	layerset.getLayer(0, 1, True)
+		
+	#populates first layer with OV and NO images
+	for i,layer in enumerate(layerset.getLayers()):
+		for n, fold in enumerate(filenames_keys):
+	#		print(fold)
+	#		print(filenames_dict[fold][i])
+			filepath = os.path.join(fold, filenames_values[n][i])
+			patch = Patch.createPatch(project, filepath)
+			layer.add(patch)
+	#		print(patch)
+		layer.recreateBuckets()
+		pass
+	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
+	param.sift.maxOctaveSize = octave_size
+	for layer in layerset.getLayers():
+	  	tiles = layer.getDisplayables(Patch) #get list of tiles
+		layerset.setMinimumDimensions() #readjust canvas size
+		tiles[0].setLocked(True) #lock the OV stack
+		non_move = [tiles[0]] #i believe tihs is what they are looking for
+		#montage or align?
+		AlignTask.alignPatches(
+		param,
+		tiles,
+		non_move,
+		False,
+		False,
+		False,
+		False) 
+		
+		roi = tiles[1].getBoundingBox() #needed in OV alignment
+	  	for tile in tiles[1:]:
+	 		roi.add(tile.getBoundingBox())
+	 	print(roi.width,roi.height)
+		project.saveAs(os.path.join(joint_folder, project_name+"test"), False)	
+		for tile in tiles:
+			tile.remove(False)
+		
+#		layer.remove(False)
 	imp = plugin.FolderOpener.open(folder, "virtual");
 	title=imp.getTitle()
+	ROI=imp.setRoi(roi.x-10,roi.y-10,roi.width+10,roi.height+10);
+	print(imp.getDimensions())
+	imp=imp.crop("stack")
+#	imp.cropAndSave(ROI,
+#					"Users/lamarcki/Desktop/automating_before_catmaid/trakem2/interim_folder",
+#					"show")
+#	imp = imp.resize(roi.width+10, roi.height+10, "bilinear");
+	
 	print(imp.getDimensions())
 	width=imp.getDimensions()[0]*size
 	height=imp.getDimensions()[1]*size
@@ -276,6 +413,11 @@ if size == 1:
 	#multiple files
 	#mac or windows
 	Title=imp.setTitle("")
+	output_scaled=os.path.join(joint_folder, "OV_interim")
+	try:
+		os.mkdir(output_scaled)
+	except OSError:
+		pass
 	if windows:
 		if imp.getDimensions()[3] != 1:
 			plugin.StackWriter.save(imp, output_scaled+"\\", "format=tiff");
@@ -291,11 +433,11 @@ if size == 1:
 	for i, fold in enumerate(filenames_keys):
 		if fold == folder:
 			#check
-			NO_file=filter(pattern_3.match, os.listdir(output_scaled))
-			for  n, filename in enumerate(NO_file):
-				for m, filename_2 in enumerate(NO_file[n+1:len(NO_file)]):
-					match = re.findall("(\d)",filename)
-					match_2 = re.findall("(\d)",filename_2)
+			OV_file=filter(pattern_3.match, os.listdir(output_scaled))
+			for  n, filename in enumerate(OV_file):
+				for m, filename_2 in enumerate(OV_file[n+1:len(OV_file)]):
+					match = int(re.findall("(\d+)",filename)[0])
+					match_2 = int(re.findall("(\d+)",filename_2)[0])
 		#			print(filename,filename_2)
 					if match > match_2:
 						temp_1=filename
@@ -303,11 +445,11 @@ if size == 1:
 		#				print(filename,filename_2)
 						filename=temp_2
 						filename_2=temp_1
-						NO_file[n]=temp_2
-						NO_file[n+m+1]=temp_1
+						OV_file[n]=temp_2
+						OV_file[n+m+1]=temp_1
 		#				print(filename,filename_2)
 			filenames_keys[i] = output_scaled
-			filenames_values[i] = NO_file	
+			filenames_values[i] = OV_file	
 print(filenames_keys,filenames_values)
 
 # ... and update the LayerTree:
@@ -322,9 +464,9 @@ print(filenames_keys,filenames_values)
 #since filenames are integers, finds smallest integer from where to start iterating from
 
 for  m, fold in enumerate(filenames_keys):
-	for n, filename in enumerate(filenames_values[m]):
-#	print(filename)
-		layerset.getLayer(n, 1, True)
+	for n, filename in enumerate(filenames_values[m][1:len(filenames_values[m])+1]):
+#		print(filename)
+		layerset.getLayer(n+1, 1, True)
 	pass	
 	
 #populates layers with OV and NO images
@@ -364,12 +506,13 @@ for layer in layerset.getLayers():
 #if blending wanted, this would be later between layers
 #Blending.blendLayerWise(layerset.getLayers(), True, None)
 
-gui = GenericDialog("Aligned?")
-gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
-gui.showDialog()
+#gui = GenericDialog("Aligned?")
+#gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
+#gui.showDialog()
 #
 project.saveAs(os.path.join(joint_folder, project_name+"with_OV"), False)
-if gui.wasOKed():
+#if gui.wasOKed():
+if 1:
 #    inString = gui.getNextString()
 #    inBool   = gui.getNextBoolean()
 #    inChoice = gui.getNextChoice() # one could alternatively call the getNextChoiceIndex too
