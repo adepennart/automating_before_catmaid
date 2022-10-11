@@ -8,19 +8,13 @@
 ##@ int (label = "layer_count", value=5, min=1, max=10, style=slider ) layers
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
-#@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
-##@ int (label = "octave_size", value=512, min=500, max=1200) octave_size
 #@ String(choices={".GRAY8", ".GRAY16", ".GRAY32", ".COLOR_RGB"}, style="list") export_type
 #@ boolean (label = "Don't invert images") inverted_image
-#@ boolean (label = "not working on windows") not_windows
 #Tile_002-001-001842_0-000.s1853_e01.tif
 #DO THIS
-#allow selection of rigid, affine, etc
-#test dataset first?
-#check if same named for each file
-#adjust cores
+#should be able to count layers in file
 
-import os, re, time, threading
+import os, re
 from ij import IJ, ImagePlus, plugin
 from ini.trakem2 import Project
 from ini.trakem2.display import Display, Patch
@@ -28,10 +22,6 @@ from ini.trakem2.imaging import Blending
 from ij.io import FileSaver
 from java.awt import Color
 from mpicbg.ij.clahe import Flat
-
-from java.lang import Runtime
-from java.util.concurrent import Executors
-
 
 #upload to catmaid
 #https://github.com/benmulcahy406/script_collection/blob/main/TrakEM2_export_selected_arealists_to_obj.pys
@@ -55,17 +45,6 @@ from java.util.concurrent import Executors
 #purger_thread.scheduleWithFixedDelay(free, 0, RELEASE_EVERY, TimeUnit.SECONDS)
 #log("scheduled purge")
 
-octave_size=512
-
-if model_index == "translation":
-	model_index=0
-elif model_index == "rigid":
-	model_index=1
-elif model_index == "similarity":
-	model_index=2
-elif model_index == "affine":
-	model_index=4
-
 if export_type == ".GRAY8":
 	export_type=0
 elif export_type == ".GRAY16":
@@ -77,8 +56,6 @@ elif export_type == ".COLOR_RGB":
 
 #variable
 joint_folder=[]
-#specify pattern(not sure this actually impacts anything)
-#pattern = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
 pattern = re.compile(".*_z[\d]_.*\.tif")
 
 #folder = "/path/to/folder/with/all/images/"
@@ -86,22 +63,16 @@ pattern = re.compile(".*_z[\d]_.*\.tif")
 folder = folder.getAbsolutePath()
 if folder_2:
 	folder_2 = folder_2.getAbsolutePath()
-#	print(folder_2)
+	print(folder_2)
 #print(type(folder))
-#print(folder)
+print(folder)
 #folder = "/Users/Auguste/Desktop/ex_image_stack/trakem2"
 #print(type(output_dir))
 output_dir = output_dir.getAbsolutePath()
-#print(type(output_dir))
+print(type(output_dir))
 
-#match_1=re.findall("[\d]+",folder)
-if not_windows:
-	match_1=re.findall("\/.[^\/]+",folder)
-	match_2=re.findall("\/.[^\/]+",folder_2)
-elif not not_windows:
-	match_1=re.findall(".[^\\\\]+",folder)
-	match_2=re.findall(".[^\\\\]+",folder_2)
-
+match_1=re.findall("\/.[^\/]+",folder)
+match_2=re.findall("\/.[^\/]+",folder_2)
 #print(match_1)
 #print(match_2)
 
@@ -119,8 +90,7 @@ elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
 #print((joint_folder))
 #		if fold 
 joint_folder="".join(joint_folder)
-#print("hey")
-#print(joint_folder)
+#print((joint_folder))
 
 #set threads
 
@@ -154,51 +124,30 @@ for n,filename in enumerate(filenames):
 #				break
 if folder_2:
 	filenames_2 = filter(pattern.match, os.listdir(folder_2))
-#	print(filenames)
+	#print(filenames)
 	if len(filenames) == len(filenames_2):
 		filenames_3=filenames+filenames_2
-#		print(filenames_3)
-#		print(len(filenames_3))
+		print(filenames_3)
 	else:
 		print("not an equal number of files in each folder")
 		#need to kill code here so that they can delete duplicate
 elif not folder_2:
 	filenames_3=filenames
 
-filenames_4=[]
-for n,filename in enumerate(filenames_3):
-#	print(filename)
-	for m,filename_2 in enumerate(filenames_3[n+1:len(filenames_3)]):
-		if filename == filename_2:
-			print("found duplicate file name", filename, filename_2, "at position", n+1, m+1, "in folder" )
-#			filenames_3.remove(filename_2)
-			filenames_4.append(filename_2)
-			break
-if filenames_4 != []:
-#	print(filenames_4)
-	filenames_3=filenames_4
-	
-#print(len(filenames_4))
+
 #project=IJ.run("TrakEM2 (blank)", "select=/Users/Auguste/Desktop/ex_image_stack/trakem2")
 #project=IJ.run("TrakEM2 (blank)")
 #Project.newFSProject("blank", None, folder)
 # 1. Create a TrakEM2 project
 project = Project.newFSProject("blank", None, joint_folder)
-#only means to date i found for updating threads
-#project.adjustProperties()
-
 #project = Project.newFSProject("blank", None)
 # OR: get the first open project
 # project = Project.getProjects().get(0)
 
-#exe = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-#exe = Executors.newScheduledThreadPool(1)
-#print('ThreadRange = ' + str(exe))
 
 #print(project)
 layerset = project.getRootLayerSet()
 ##print(layerset)
-
 ##  2. Create 10 layers (or as many as you need)
 ##picks layer 0 even if there isn't one
 #for i in range(layers):
@@ -233,30 +182,18 @@ elif not filenames_2:
 #	break
 
 for n, filename in enumerate(filenames_3):
-#	print(filename)
-	#pattern on mac
+	print(filename)
+	#find another matching code
 	match = re.findall("(\d)",filename)
-	#pattern on pc
-#	match = re.findall("-(\d+)_",filename)
-#	print(match)
-#	match= re.findall("[\d]+",match)
 #	for some reason does not work
 #	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
-#mac pattern
 	if n == 0:
 		n_start=int(match[1])
 	elif n != 0 :
 		num=int(match[1])
 		if num < n_start:
 			n_start=int(match[1])
-#windows pattern
-#	if n == 0:
-#		n_start=int(match[0])
-#	elif n != 0 :
-#		num=int(match[0])
-#		if num < n_start:
-#			n_start=int(match[0])
-#print(n_start)
+print(n_start)
 	
 			
 #for filename in filenames_3:
@@ -273,27 +210,24 @@ for i,layer in enumerate(layerset.getLayers()):
 	# that must be inserted into section at index i:
 	#will have to get input from user what the start file is
 	pattern = re.compile(".*_z" + str(n_start+i) + "_.*\.tif")
-#	pattern = re.compile(".*-[\d]{3}-0+"+ str(n_start+i) + "_.*\.tif")
 	for filename in filter(pattern.match, filenames_3):
 #    print(pattern.match,i)
 #    print(filename)
 #		filepath = os.path.join(folder, filename)
 		if filename in filenames:
-#			print(filename)
+			print(filename)
 			filepath = os.path.join(folder, filename)
-			patch = Patch.createPatch(project, filepath)
-			layer.add(patch)
 #			print(filepath)
 		if filename in filenames_2:
-#				print(filename)
+				print(filename)
 	#			filepath_2 = os.path.join(folder_2, filename)
 	#			print(filepath_2)
 				filepath = os.path.join(folder_2, filename)
-				patch = Patch.createPatch(project, filepath)
-				layer.add(patch)
 #				print(filepath)
 #		filepath=filepath+filepath_2
-#		print(filepath)
+		print(filepath)
+		patch = Patch.createPatch(project, filepath)
+		layer.add(patch)
 #    print(patch)
 #    print(layer)
 # 	 Update internal quadtree of the layer
@@ -323,34 +257,57 @@ for i,layer in enumerate(layerset.getLayers()):
 #  layer.recreateBuckets()
 
 # 4. Montage each layer independently
-#def montaging(set_layer):
 from mpicbg.trakem2.align import Align, AlignTask
+from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
+from java.util import HashSet
+
+#select actually imports, just copied
+#https://github.com/templiert/ufomsem/blob/79a02010533f8127deeb0fed04cfc1ea90edb7f0/stitch_align.py
+#import os, time, sys
+#from ij import IJ, Macro
+#import java
+#from java.lang import Runtime
+#from java.awt import Rectangle
+#from java.awt.geom import AffineTransform
+#from java.util import HashSet
+#from ini.trakem2 import Project, ControlWindow
+#from ini.trakem2.display import Patch, Display
+#from ini.trakem2.imaging import StitchingTEM
+#from ini.trakem2.imaging.StitchingTEM import PhaseCorrelationParam
+#from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
+
+
+#param = RegularizedAffineLayerAlignment.Param()
+param = Align.ParamOptimize(desiredModelIndex=0,expectedModelIndex=0)  # which extends Align.Param
 #param = Align.ParamOptimize()  # which extends Align.Param
-param = Align.ParamOptimize(
-		desiredModelIndex=model_index,
-		expectedModelIndex=model_index)#,
-#		maxNumThreadsSift = Runtime.getRuntime().availableProcessors())  # which extends Align.Param
-param.sift.maxOctaveSize = octave_size
+param.sift.maxOctaveSize = 512
+#param.ppm.sift.maxOctaveSize = 512
+#fixedLayers = HashSet()
+#for i in range(len(layerset.getLayers())):
+#    fixedLayers.add(layerset.getLayers().get(i))
+
+#emptyLayers = HashSet()
+
+#layerRange = layerset.getLayers(len(layerset.getLayers())-1,len(layerset.getLayers()))
+#layerRange = layerset.getLayers(len(layerset.getLayers())-2,len(layerset.getLayers())-1)
 #  ... above, adjust other parameters as necessary
 # See:
 #    features: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.Param.html
 #    transformation models: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.ParamOptimize.html
-#    sift: https://fiji.sc/javadoc/mpicbg/imagefeatures/FloatArray2DSIFT.Param.html
-
+#    sift: https://fiji.sc/javadoc/mpicbg/imagefeatures/FloatArray2DSIFT.Param.
+#print("hey")
+#print(layerRange)
+#print(param)
 AlignTask.montageLayers(param, layerset.getLayers(), False, False, False, False)
-#AlignTask.montageLayers(param, set_layer, False, False, False, False)
-	
-#threadRange = range(max(int(Runtime.getRuntime().availableProcessors()), 1))
-#print(str(threadRange))
-#
-##you got to do everylayer
-#for i, layer in enumerate(layerset.getLayers()):
-#	for n in threadRange:
-#		thread=threading.Thread(montaging(layer))
-#		thread.start()
-
-#AlignTask.montageLayers(param, layerset.getLayers(), False, False, False, False)
-
+#RegularizedAffineLayerAlignment().exec(
+#        param,
+#        layerRange,	
+#        fixedLayers,
+#        emptyLayers,
+#        layerset.get2DBounds(),
+#        False,
+#        False,
+#        None)
 # 5. Resize width and height of the world to fit the montages
 layerset.setMinimumDimensions()
 
@@ -433,5 +390,5 @@ for i, layer in enumerate(layerset.getLayers()):
 ## 7. Save the project
 project.saveAs(os.path.join(joint_folder, project_name), False)
 
-print(time.time())
+
 print("Done!")
