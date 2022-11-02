@@ -73,7 +73,8 @@ from ini.trakem2.display import Display, Patch
 from ini.trakem2.imaging import Blending
 from ij.io import FileSaver
 #for aligning/montaging
-from mpicbg.trakem2.align import Align, AlignTask
+from mpicbg.trakem2.align import Align, AlignTask, AlignLayersTask
+#from ini.trakem2.utils import Filter
 #for exporting
 from java.awt import Color
 from mpicbg.ij.clahe import Flat
@@ -84,6 +85,9 @@ from ij.gui import GUI
 #could be useful for threads
 from java.lang import Runtime
 from java.util.concurrent import Executors
+
+#align
+from ini.trakem2.utils import Filter
 
 #func: finds mutual folder between both input folders
 def mut_fold(OV_fold=None,NO_fold=None,is_windows=None):
@@ -172,11 +176,15 @@ def file_find(OV_fold=None, NO_fold=None, is_windows=None,pattern_1=None, patter
 #	#		print("found folder")
 #			all_folder_list.append(filename)
 	all_folder_list=folder_find(NO_fold, is_windows, OV_fold)
-	if  len(all_folder_list)==1:
-		all_folder_list.append(NO_fold)
-#	else:
-#		print("ERROR: no OV folder found" )
-#		sys.exit("no OV folder found" )
+	if OV_fold:
+		if  len(all_folder_list)==1:
+			all_folder_list.append(NO_fold)
+	if not OV_fold:
+		if len(all_folder_list)==0:
+			all_folder_list.append(NO_fold)
+#		else:
+#			print("ERROR: no OV folder found" )
+#			sys.exit("no OV folder found" )
 	for fold in all_folder_list:
 		file_list=filter(pattern_2.match, os.listdir(fold))
 		#not sure about this line of code
@@ -226,10 +234,10 @@ def make_dir(path=None, dir_name=None, file_var=None, filename=None, is_windows=
 	return new_dir
 
 #func: invert
-def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern_3=None):
+def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern_3=None, file_start=1):
 #	output_inverted=make_dir(joint_folder, "NO_interim")
-	for n, fold in enumerate(filenames_keys[1:]):
-		for m, filename in enumerate(filenames_values[1:][n]):
+	for n, fold in enumerate(filenames_keys[file_start:]):
+		for m, filename in enumerate(filenames_values[file_start:][n]):
 			filepath = os.path.join(fold,filename)
 			imp=IJ.openImage(filepath);
 			IJ.run(imp, "Invert", "");
@@ -239,8 +247,8 @@ def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 #			IJ.saveAs(imp, "Tiff", sub_dir+"/"+str(m));
 			NO_file=filter(pattern_3.match, os.listdir(sub_dir))
 			NO_file=file_sort(NO_file)
-			filenames_keys[n+1] = sub_dir
-			filenames_values[n+1] = NO_file
+			filenames_keys[n+file_start] = sub_dir
+			filenames_values[n+file_start] = NO_file
 	return filenames_keys, filenames_values
 
 def add_patch(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None): #layerset=None,
@@ -258,14 +266,17 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 			layer.recreateBuckets()
 	return layerset
 
-def align_layers(model_index=None, octave_size=None, layerset=None):
+def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None):
+	non_move=None
+	roi=None
 	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
 	param.sift.maxOctaveSize = octave_size
 	for layer in layerset.getLayers():
 	  	tiles = layer.getDisplayables(Patch) #get list of tiles
 		layerset.setMinimumDimensions() #readjust canvas size
-		tiles[0].setLocked(True) #lock the OV stack
-		non_move = [tiles[0]] #i believe tihs is what they are looking for
+		if not OV_lock:	
+			tiles[0].setLocked(True) #lock the OV stack
+			non_move = [tiles[0]] #i believe tihs is what they are looking for
 		#montage or align?
 		AlignTask.alignPatches(
 		param,
@@ -274,10 +285,11 @@ def align_layers(model_index=None, octave_size=None, layerset=None):
 		False,
 		False,
 		False,
-		False) 
-		roi = tiles[1].getBoundingBox() #needed in OV alignment
-	  	for tile in tiles[1:]:
-	 		roi.add(tile.getBoundingBox())
+		False)
+		if not OV_lock: 
+			roi = tiles[1].getBoundingBox() #needed in OV alignment
+			for tile in tiles[1:]:
+				roi.add(tile.getBoundingBox())
 	return roi, tiles
 
 def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, size=None, model_index=None, octave_size=None, invert_image=False): #layerset=None, pattern_3=None
@@ -309,6 +321,39 @@ def find_crop_area(filenames_keys=None, filenames_values=None, project=None, tes
 	#populates first layer with OV and NO images
 	layerset=add_patch(temp_filenames_keys, temp_filenames_values, project, 0, 1)
 	roi, tiles =align_layers(model_index, octave_size, layerset)
+	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)	
+	return roi, tiles
+
+def tester(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, size=None, model_index=None, octave_size=None, invert_image=False): #layerset=None, pattern_3=None
+#	layerset = project.getRootLayerSet()
+	temp_filenames_keys=[]
+	temp_filenames_values=[]
+	test_interim=make_dir(test_folder, "substack_"+re.findall("\d+",project_name)[-1])
+	for num in range(0,len(filenames_keys)):
+#	for num in range(1,len(filenames_keys)):
+#		print(filenames_values[num][0])
+		path=os.path.join(filenames_keys[num], filenames_values[num][0]) #this (also in invert) could become funciton
+		imp=IJ.openImage(path);
+		title=imp.getTitle()
+#		if size != 1:
+#			old_dim=imp.getDimensions()
+#			width=int((imp.getDimensions()[0])*(float(1)/float(size)))
+#			height=int((imp.getDimensions()[1])*(float(1)/float(size)))
+#			#resize images
+#			imp = imp.resize(width, height, "none");
+#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
+		#invert
+		if invert_image:
+			IJ.run(imp, "Invert", "");
+		#mac or windows
+		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
+		temp_filenames_keys.append(sub_dir)
+		temp_filenames_values.append([title])
+		#sort?
+#	print(temp_filenames_keys,temp_filenames_values)
+	#populates first layer with OV and NO images
+	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
+	roi, tiles =align_layers(model_index, octave_size, layerset,True)
 	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)	
 	return roi, tiles
 
