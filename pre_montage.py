@@ -90,25 +90,20 @@ from java.util.concurrent import Executors
 from ini.trakem2.utils import Filter
 
 #func: finds mutual folder between both input folders
-def mut_fold(OV_fold=None,NO_fold=None,is_windows=None):
+def mut_fold(folder_1=None,folder_2=None,is_windows=None):
 #	variables
 	joint_folder=[]
-	if OV_fold == NO_fold:
+	if folder_1 == folder_2:
 		print("ERROR: same folder selected for OV and NO" )
 		sys.exit("same folder selected for OV and NO" )
 	#finds all the parent directories of the input folders
 	if is_windows:
-		match_1=re.findall(".[^\\\\]+",OV_fold)
-		match_2=re.findall(".[^\\\\]+",NO_fold)
+		match_1=re.findall(".[^\\\\]+",folder_1)
+		match_2=re.findall(".[^\\\\]+",folder_2)
 	elif not is_windows:
-		match_1=re.findall("\/.[^\/]+",OV_fold)
-		match_2=re.findall("\/.[^\/]+",NO_fold)
+		match_1=re.findall("\/.[^\/]+",folder_1)
+		match_2=re.findall("\/.[^\/]+",folder_2)
 #	print(match_1, match_2)
-	#check for the same folder and if dfferent folder finds mutual parent folders
-#	if match_1[len(match_1)-1] == match_2[len(match_2)-1]:
-#		print("ERROR: same folder selected for OV and NO" )
-#		sys.exit("same folder selected for OV and NO" )
-#	elif match_1[len(match_1)-1] != match_2[len(match_2)-1]:
 	for Folder in reversed(match_1):
 		if Folder in match_2:
 			joint_folder.insert(0,Folder)
@@ -118,14 +113,19 @@ def mut_fold(OV_fold=None,NO_fold=None,is_windows=None):
 
 
 #func:sort_
-def file_sort(file_list=None):
+def file_sort(file_list=None,sort_by_digit=0):
 #	variables:
-	filenames_keys=[]
-	filenames_values=[]
+#	filenames_keys=[]
+#	filenames_values=[]
+
 	for  n, filename in enumerate(file_list):
 		for m, filename_2 in enumerate(file_list[n+1:len(file_list)]):
-			match = int(re.findall("(\d+)",filename)[0])
-			match_2 = int(re.findall("(\d+)",filename_2)[0])
+			try:
+				match = int(re.findall("(\d+)",str(filename))[0])
+				match_2 = int(re.findall("(\d+)",str(filename_2))[0])
+			except IndexError:
+				print(" ERROR: Currently only works with filenames containing digits")
+				sys.exit("Currently only works with filenames containing digits")
 #			print(filename,filename_2)
 			if match > match_2:
 				temp_1=filename
@@ -138,53 +138,40 @@ def file_sort(file_list=None):
 #				print(filename,filename_2)
 	return file_list
 
-def folder_find(fold=None,  is_windows=None, two_fold=None):
+#make folder list including all folders found in loop_folder
+def folder_find(loop_fold=None,  is_windows=None, append_fold=None):
 #	variables
 	all_folder_list=[]
-	if two_fold:#if you want both OV and NO in the same list, True (is the case once looking at each substack)
-		all_folder_list.append(two_fold)
-	filenames =  os.listdir(fold)
+	filenames =  os.listdir(loop_fold)
 	for filename in filenames:
 	#	fix if not mac
 		if is_windows:
-			filename = fold+"\\"+filename
+			filename = loop_fold+"\\"+filename
 		elif not is_windows:
-			filename = fold+"/"+filename
+			filename = loop_fold+"/"+filename
 	#	print(filename)
 		if os.path.isdir(filename):
 	#		print("found folder")
-			all_folder_list.append(filename)
+			all_folder_list.append(filename)	
+	if len(all_folder_list)==0: #if no folders found assumes, this is instead the folder to find files
+			all_folder_list.append(loop_fold)
+	if append_fold:#appends folders for the beginning of list (folders assumed to contain files of interest)
+		if type(append_fold) == list:
+			all_folder_list=append_fold+all_folder_list
+		elif type(append_fold) == unicode:
+			all_folder_list=[append_fold]+all_folder_list
+		else:
+			print(" ERROR: expected list or unicode for append_fold")
+			sys.exit("expected list or unicode for append_fold")
 	return all_folder_list
 
+	
+	
 #func: find files in input directories
-def file_find(OV_fold=None, NO_fold=None, is_windows=None,pattern_1=None, pattern_2=None):
+def file_find(all_folder_list=None, pattern_1=None, pattern_2=None):
 #	variables
-#	all_folder_list=[]
-#	all_folder_list.append(OV_fold)
-#	NO_filenames =  os.listdir(NO_fold)
 	filenames_keys=[]
 	filenames_values=[]
-##	print(NO_filenames)
-#	for filename in NO_filenames:
-#	#	fix if not mac
-#		if is_windows:
-#			filename = NO_fold+"\\"+filename
-#		elif not is_windows:
-#			filename = NO_fold+"/"+filename
-#	#	print(filename)
-#		if os.path.isdir(filename):
-#	#		print("found folder")
-#			all_folder_list.append(filename)
-	all_folder_list=folder_find(NO_fold, is_windows, OV_fold)
-	if OV_fold:
-		if  len(all_folder_list)==1:
-			all_folder_list.append(NO_fold)
-	if not OV_fold:
-		if len(all_folder_list)==0:
-			all_folder_list.append(NO_fold)
-#		else:
-#			print("ERROR: no OV folder found" )
-#			sys.exit("no OV folder found" )
 	for fold in all_folder_list:
 		file_list=filter(pattern_2.match, os.listdir(fold))
 		#not sure about this line of code
@@ -192,6 +179,10 @@ def file_find(OV_fold=None, NO_fold=None, is_windows=None,pattern_1=None, patter
 	 		file_list=filter(pattern_1.match, os.listdir(fold))
 	 	filenames_keys.append(fold)
 		filenames_values.append(file_sort(file_list))
+	for num in range(0,len(filenames_keys)):	
+		if not filenames_keys[num] or not filenames_values[num]:
+			print("ERROR: no files found, check folder or pattern")
+			sys.exit(" no files found, check folder or pattern")
 	return filenames_keys, filenames_values
 
 	
@@ -258,7 +249,7 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 	for i,layer in enumerate(layerset.getLayers()):
 			for n, fold in enumerate(filenames_keys):
 		#		print(fold)
-		#		print(filenames_dict[fold][i])
+#				print(filenames_values[n][i])
 				filepath = os.path.join(fold, filenames_values[n][i])
 				patch = Patch.createPatch(project, filepath)
 				layer.add(patch)
@@ -269,6 +260,7 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None):
 	non_move=None
 	roi=None
+	roi_list=[]
 	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
 	param.sift.maxOctaveSize = octave_size
 	for layer in layerset.getLayers():
@@ -286,76 +278,136 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 		False,
 		False,
 		False)
+		if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
+			#will become list
+			for tile in tiles[0:]:
+				roi = tile.getBoundingBox() #needed in OV alignment
+				roi_list.append(roi)
+			roi=roi_list
 		if not OV_lock: 
 			roi = tiles[1].getBoundingBox() #needed in OV alignment
 			for tile in tiles[1:]:
 				roi.add(tile.getBoundingBox())
 	return roi, tiles
 
-def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, size=None, model_index=None, octave_size=None, invert_image=False): #layerset=None, pattern_3=None
-#	layerset = project.getRootLayerSet()
-	temp_filenames_keys=[filenames_keys[0]]
-	temp_filenames_values=[filenames_values[0]]
-	test_interim=make_dir(test_folder, "substack_"+re.findall("\d+",project_name)[-1])
-	for num in range(1,len(filenames_keys)):
-#		print(filenames_values[num][0])
-		path=os.path.join(filenames_keys[num], filenames_values[num][0]) #this (also in invert) could become funciton
-		imp=IJ.openImage(path);
-		title=imp.getTitle()
-		if size != 1:
-			old_dim=imp.getDimensions()
-			width=int((imp.getDimensions()[0])*(float(1)/float(size)))
-			height=int((imp.getDimensions()[1])*(float(1)/float(size)))
-			#resize images
-			imp = imp.resize(width, height, "none");
-#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
-		#invert
-		if invert_image:
-			IJ.run(imp, "Invert", "");
-		#mac or windows
-		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
-		temp_filenames_keys.append(sub_dir)
-		temp_filenames_values.append([title])
-		#sort?
-#	print(temp_filenames_keys,temp_filenames_values)
-	#populates first layer with OV and NO images
-	layerset=add_patch(temp_filenames_keys, temp_filenames_values, project, 0, 1)
-	roi, tiles =align_layers(model_index, octave_size, layerset)
-	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)	
-	return roi, tiles
-
-def tester(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, size=None, model_index=None, octave_size=None, invert_image=False): #layerset=None, pattern_3=None
-#	layerset = project.getRootLayerSet()
+#def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, model_index=None, octave_size=None, invert_image=False,size=None): #layerset=None, pattern_3=None
+def prep_test_align(filenames_keys=None, filenames_values=None,test_folder=None, windows=None, project_name=None,invert_image=False,size=None):
 	temp_filenames_keys=[]
 	temp_filenames_values=[]
+	temp_filenames_keys+=filenames_keys
+	temp_filenames_values+=filenames_values
 	test_interim=make_dir(test_folder, "substack_"+re.findall("\d+",project_name)[-1])
+#	for num in range(1,len(filenames_keys)):#do we need this for NO?
 	for num in range(0,len(filenames_keys)):
-#	for num in range(1,len(filenames_keys)):
 #		print(filenames_values[num][0])
 		path=os.path.join(filenames_keys[num], filenames_values[num][0]) #this (also in invert) could become funciton
 		imp=IJ.openImage(path);
 		title=imp.getTitle()
-#		if size != 1:
-#			old_dim=imp.getDimensions()
-#			width=int((imp.getDimensions()[0])*(float(1)/float(size)))
-#			height=int((imp.getDimensions()[1])*(float(1)/float(size)))
-#			#resize images
-#			imp = imp.resize(width, height, "none");
-#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
+		if size:
+			if size != 1:
+				old_dim=imp.getDimensions()
+				width=int((imp.getDimensions()[0])*(float(1)/float(size)))
+				height=int((imp.getDimensions()[1])*(float(1)/float(size)))
+				#resize images
+				imp = imp.resize(width, height, "none");
+	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
 		#invert
 		if invert_image:
 			IJ.run(imp, "Invert", "");
 		#mac or windows
 		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
-		temp_filenames_keys.append(sub_dir)
-		temp_filenames_values.append([title])
-		#sort?
-#	print(temp_filenames_keys,temp_filenames_values)
-	#populates first layer with OV and NO images
-	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
-	roi, tiles =align_layers(model_index, octave_size, layerset,True)
-	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)	
-	return roi, tiles
+		temp_filenames_keys[num]=sub_dir
+		temp_filenames_values[num]=[title]
+#	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
+#	roi, tiles =align_layers(model_index, octave_size, layerset,True)
+#	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)
+	return temp_filenames_keys, temp_filenames_values
+#	return roi, tiles
+#
+##def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, model_index=None, octave_size=None, invert_image=False,size=None): #layerset=None, pattern_3=None
+#def prep_test_align_NO(filenames_keys=None, filenames_values=None,test_folder=None, windows=None, project_name=None,invert_image=False,size=None):
+#	temp_filenames_keys=[filenames_keys[0]]
+#	temp_filenames_values=[filenames_values[0]]
+#	test_interim=make_dir(test_folder, "substack_"+re.findall("\d+",project_name)[-1])
+##	for num in range(1,len(filenames_keys)):#do we need this for NO?
+#	for num in range(1,len(filenames_keys)):
+##		print(filenames_values[num][0])
+#		path=os.path.join(filenames_keys[num], filenames_values[num][0]) #this (also in invert) could become funciton
+#		imp=IJ.openImage(path);
+#		title=imp.getTitle()
+#		if size:
+#			if size != 1:
+#				old_dim=imp.getDimensions()
+#				width=int((imp.getDimensions()[0])*(float(1)/float(size)))
+#				height=int((imp.getDimensions()[1])*(float(1)/float(size)))
+#				#resize images
+#				imp = imp.resize(width, height, "none");
+#	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
+#		#invert
+#		if invert_image:
+#			IJ.run(imp, "Invert", "");
+#		#mac or windows
+#		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
+#		temp_filenames_keys.append(sub_dir)
+#		temp_filenames_values.append([title])
+##	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
+##	roi, tiles =align_layers(model_index, octave_size, layerset,True)
+##	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)
+#	return temp_filenames_keys, temp_filenames_values
+##	return roi, tiles
+def overlap_area(ROI=None):
+	file_sort(ROI)
+	x_list=[]
+	y_list=[]
+	width_list=[]
+	height_list=[]
+	match=0
+	for n, r in  enumerate(ROI):
+		x_list.append(str(r.x)+"_"+str(n))
+		y_list.append(str(r.y)+"_"+str(n))
+		width_list.append(str(r.width)+"_"+str(n))
+		height_list.append(str(r.height)+"_"+str(n))
+	for x in x_list:
+		if "-" in x:
+			match = int(re.findall("(\d+)",str(x))[0])
+	if match:
+		for x in x_list:
+			int(x[:-2])+match
+	match=0
+	for y in y_list:
+		if "-" in y:
+				match = int(re.findall("(\d+)",str(y))[0])
+	if match:
+		for y in y_list:
+			int(y[:-2])+match			
+	print(x_list,y_list)
+	x_list=file_sort(x_list)
+	y_list=file_sort(y_list)
+	print(x_list,y_list,width_list, height_list)
+	for index in range(0,len(width_list)):
+		if width_list[index][-1] == x_list[0][-1]:
+			right_x=int(width_list[index][:-2])+int(x_list[0][:-2])
+		else:#will not work for more than 2 tiles
+			width=width_list[index]
+	for index in range(0,len(width_list)):
+		if width[-1] == x_list[index][-1]:	
+			x_overlap=right_x-int(x_list[index][:-2])
+			new_x=int(x_list[index][:-2])
+			print(right_x)
+			print(x_overlap)
+			
+	for index in range(0,len(width_list)):
+		if height_list[index][-1] == y_list[0][-1]:
+			down_y=int(height_list[index][:-2])+int(y_list[0][:-2])
+		else:#will not work for more than 2 tiles
+			height=height_list[index]
+	for index in range(0,len(width_list)):
+		if height[-1] == y_list[index][-1]:	
+			y_overlap=down_y-int(y_list[index][:-2])
+			new_y=int(y_list[index][:-2])
+			print(down_y)
+			print(y_overlap)
+	return [new_x, new_y, x_overlap, y_overlap]
 
 def remove_tiles(tiles=None):
 	for tile in tiles:
@@ -377,12 +429,37 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	#multiple files
 	#mac or windows
 	Title=imp.setTitle("")
-	output_scaled=make_dir(joint_folder, "OV_interim"+_,imp, title, windows, True)
+	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True)
 	OV_file=filter(pattern_3.match, os.listdir(output_scaled))
 	OV_file=file_sort(OV_file)
 	filenames_keys[0] = output_scaled
 	filenames_values[0] = OV_file
 	return filenames_keys, filenames_values
+	
+def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern_3=None, roi=None): #layerset=None, project=None
+	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual");
+	title=imp.getTitle()
+	ROI=imp.setRoi(roi[0],roi[1],roi[2],roi[3]);
+	print(imp.getDimensions())
+#	imp=imp.crop("stack")
+	IJ.setBackgroundColor(0, 0, 0)
+	IJ.run(imp, "Clear", "slice")
+	old_dim=imp.getDimensions()
+#	width=imp.getDimensions()[0]*size
+#	height=imp.getDimensions()[1]*size
+#	#resize images
+#	imp = imp.resize(width, height, "none");
+	print(old_dim, imp.getDimensions())
+	#multiple files
+	#mac or windows
+	Title=imp.setTitle("")
+#	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True)
+	output_scaled=make_dir(joint_folder, "_"+str(0), imp, "/"+str(0),windows, True)
+	OV_file=filter(pattern_3.match, os.listdir(output_scaled))
+	OV_file=file_sort(OV_file)
+	filenames_keys[0] = output_scaled
+	filenames_values[0] = OV_file
+	return filenames_keys, filenames_values	
 	
 #removes the OV tile
 def remove_OV(layerset=None,image_rem_num=None):
