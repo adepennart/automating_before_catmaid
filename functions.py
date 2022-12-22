@@ -77,7 +77,7 @@ from mpicbg.trakem2.align import Align, AlignTask, AlignLayersTask
 #from ini.trakem2.utils import Filter
 #for exporting
 from java.awt import Color
-from mpicbg.ij.clahe import Flat
+from mpicbg.ij.clahe import FastFlat, Flat
 #for gui
 #https://mirror.imagej.net/developer/api/ij/gui/
 from ij.gui import GenericDialog
@@ -113,7 +113,7 @@ def mut_fold(folder_1=None,folder_2=None,is_windows=None):
 
 
 #func:sort_
-def file_sort(file_list=None,sort_by_digit=0):
+def file_sort(file_list=None,sort_by_digit=0, rev=False):
 #	variables:
 #	filenames_keys=[]
 #	filenames_values=[]
@@ -121,21 +121,33 @@ def file_sort(file_list=None,sort_by_digit=0):
 	for  n, filename in enumerate(file_list):
 		for m, filename_2 in enumerate(file_list[n+1:len(file_list)]):
 			try:
-				match = int(re.findall("(\d+)",str(filename))[0])
-				match_2 = int(re.findall("(\d+)",str(filename_2))[0])
+				match = int(re.findall("(\d+)",str(filename))[sort_by_digit])
+				match_2 = int(re.findall("(\d+)",str(filename_2))[sort_by_digit])
 			except IndexError:
 				print(" ERROR: Currently only works with filenames containing digits")
 				sys.exit("Currently only works with filenames containing digits")
 #			print(filename,filename_2)
-			if match > match_2:
-				temp_1=filename
-				temp_2=filename_2
-#				print(filename,filename_2)
-				filename=temp_2
-				filename_2=temp_1
-				file_list[n]=temp_2
-				file_list[n+m+1]=temp_1
-#				print(filename,filename_2)
+			if not rev:
+				if match > match_2:
+					temp_1=filename
+					temp_2=filename_2
+	#				print(filename,filename_2)
+					filename=temp_2
+					filename_2=temp_1
+					file_list[n]=temp_2
+					file_list[n+m+1]=temp_1
+	#				print(filename,filename_2)
+			if rev:
+				if n < n+1:
+#				if match < match_2:
+					temp_1=filename
+					temp_2=filename_2
+#					print(filename,filename_2)
+					filename=temp_2
+					filename_2=temp_1
+					file_list[n]=temp_2
+					file_list[n+m+1]=temp_1
+	#				print(filename,filename_2)
 	return file_list
 
 #make folder list including all folders found in loop_folder
@@ -248,9 +260,26 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 		layerset.getLayer(i, 1, True)
 	for i,layer in enumerate(layerset.getLayers()):
 			for n, fold in enumerate(filenames_keys):
-		#		print(fold)
-#				print(filenames_values[n][i])
+				print(fold)
+				print(filenames_values[n][i])
 				filepath = os.path.join(fold, filenames_values[n][i])
+				patch = Patch.createPatch(project, filepath)
+				layer.add(patch)
+		#		print(patch)
+			layer.recreateBuckets()
+	return layerset
+
+def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None): #layerset=None,
+	layerset = project.getRootLayerSet()
+	for i in range(start_lay,tot_lay):
+		layerset.getLayer(i, 1, True)
+	for i ,layer in enumerate(layerset.getLayers()):
+		if i >= start_lay:
+			for n, fold in enumerate(filenames_keys):
+				print(fold)
+				print(filenames_values[n][i-start_lay])
+				print(i+start_lay)
+				filepath = os.path.join(fold, filenames_values[n][i-start_lay])
 				patch = Patch.createPatch(project, filepath)
 				layer.add(patch)
 		#		print(patch)
@@ -313,6 +342,7 @@ def prep_test_align(filenames_keys=None, filenames_values=None,test_folder=None,
 	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
 		#invert
 		if invert_image:
+			print(here)
 			IJ.run(imp, "Invert", "");
 		#mac or windows
 		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
@@ -355,59 +385,174 @@ def prep_test_align(filenames_keys=None, filenames_values=None,test_folder=None,
 ##	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)
 #	return temp_filenames_keys, temp_filenames_values
 ##	return roi, tiles
+#def overlap_area(ROI=None):
+
+
+
 def overlap_area(ROI=None):
-	file_sort(ROI)
+	#file_sort(ROI)
 	x_list=[]
 	y_list=[]
+	new_x_list=[]
+	new_y_list=[]
 	width_list=[]
 	height_list=[]
-	match=0
+	match_x=0
+	match_y=0
 	for n, r in  enumerate(ROI):
-		x_list.append(str(r.x)+"_"+str(n))
-		y_list.append(str(r.y)+"_"+str(n))
-		width_list.append(str(r.width)+"_"+str(n))
-		height_list.append(str(r.height)+"_"+str(n))
+		x_list.append(r.x)
+		y_list.append(r.y)
+		width_list.append(r.width)
+		height_list.append(r.height)
+	#print(x_list,y_list,width_list, height_list)
 	for x in x_list:
-		if "-" in x:
-			match = int(re.findall("(\d+)",str(x))[0])
-	if match:
+		if x < match_x:
+			match_x = 0 + x
+	if match_x:
 		for x in x_list:
-			int(x[:-2])+match
-	match=0
+			print("found -", x-match_x)
+			new_x=x - match_x
+			new_x_list.append(new_x)
+	else:
+		new_x_list=x_list
 	for y in y_list:
-		if "-" in y:
-				match = int(re.findall("(\d+)",str(y))[0])
-	if match:
+		if y < match_y:
+			match_y = 0 + y
+	if match_y:
 		for y in y_list:
-			int(y[:-2])+match			
-	print(x_list,y_list)
-	x_list=file_sort(x_list)
-	y_list=file_sort(y_list)
-	print(x_list,y_list,width_list, height_list)
-	for index in range(0,len(width_list)):
-		if width_list[index][-1] == x_list[0][-1]:
-			right_x=int(width_list[index][:-2])+int(x_list[0][:-2])
-		else:#will not work for more than 2 tiles
-			width=width_list[index]
-	for index in range(0,len(width_list)):
-		if width[-1] == x_list[index][-1]:	
-			x_overlap=right_x-int(x_list[index][:-2])
-			new_x=int(x_list[index][:-2])
-			print(right_x)
-			print(x_overlap)
+			new_y= y - match_y
+			new_y_list.append(new_y)
+	else:
+		new_y_list=y_list	
+				
+#	for n, r in  enumerate(ROI):
+#		x_list.append(str(r.x)+"_"+str(n))
+#		y_list.append(str(r.y)+"_"+str(n))
+#		width_list.append(str(r.width)+"_"+str(n))
+#		height_list.append(str(r.height)+"_"+str(n))
+#	print(x_list,y_list,width_list, height_list)
+#	for x in x_list:
+#		if "-" in x:
+#			temp_match = int(re.findall("(\d+)",str(x))[0])
+##			print("found -", int(x[:-2])+match)
+#			if temp_match > match:
+#				match = temp_match
+#	if match:
+#		for x in x_list:
+#			print("found -", int(x[:-2])+match)
+#			x=str(int(x[:-2])+match)+x[-2:]
+#			new_x_list.append(x)
+#	else:
+#		new_x_list=x_list
+#	match=0
+#	for y in y_list:
+#		if "-" in y:
+#			temp_match = int(re.findall("(\d+)",str(y))[0])
+#			if temp_match > match:
+#				match = temp_match
+#	if match:
+#		for y in y_list:
+#			y=str(int(y[:-2])+match)+y[-2:]
+#			new_y_list.append(y)
+#	else:
+#		new_y_list=y_list			
+	#print(x_list,y_list)
+#	x_list=file_sort(x_list)
+#	y_list=file_sort(y_list)
+	new_roi=[]
+	roi_list=[]
+	
+	for index in range(0,len(new_x_list)):
+		new_roi.append(new_x_list[index])
+		new_roi.append(new_y_list[index])
+		new_roi.append(width_list[index])
+		new_roi.append(height_list[index])
+		roi_list.append(new_roi)
+		new_roi=[]
+
+	#	new_x_list=file_sort(new_x_list)
+	#new_roi_list is made to add crop areas after
+	new_roi_list=[]
+	for i in range(0,len(roi_list)):
+		new_roi_list.append(i)
+	for n, x in enumerate(new_x_list):
+		for roi in roi_list:
+			if x == roi[0]:
+				new_roi_list[n]=roi
+	#print(new_roi_list)	
+	#nothing in place for y
+	#y_list=file_sort(new_y_list)
+#	print(x_list,y_list,width_list, height_list)
+	big_dif=False
+	for n, y in enumerate(y_list):
+		for y2 in y_list[n+1:]:
+			if abs(abs(y) - abs(y)) > 15:
+				big_dif=True
 			
-	for index in range(0,len(width_list)):
-		if height_list[index][-1] == y_list[0][-1]:
-			down_y=int(height_list[index][:-2])+int(y_list[0][:-2])
-		else:#will not work for more than 2 tiles
-			height=height_list[index]
-	for index in range(0,len(width_list)):
-		if height[-1] == y_list[index][-1]:	
-			y_overlap=down_y-int(y_list[index][:-2])
-			new_y=int(y_list[index][:-2])
-			print(down_y)
-			print(y_overlap)
-	return [new_x, new_y, x_overlap, y_overlap]
+	if big_dif:
+		gui = GUI.newNonBlockingDialog("Y_axis_overlap?")
+		gui.addMessage(" It seems that images may be aligned vertically, as opposed to horizontally. Is this correct?")
+		gui.showDialog()
+		if gui.wasOKed():
+			print("ERROR: Currently does not handle vertical overlap")
+			sys.exit("Currently does not handle vertical overlap")		
+		elif not gui.wasOKed():
+			pass				
+#	print(new_x_list,new_y_list,width_list, height_list)
+	overlap_list=[]
+	temp_overlap_list=[]
+	assoc_x_list=[]
+	new_x=""
+	for n, x in enumerate(new_roi_list):
+		for x2 in new_roi_list[n+1:]:
+			if x[0]+x[2] > x2[0]:
+				new_x = [] + x
+				new_x[0] = x2[0] -x[0]
+#				new_x[2]=x[2]-x[0]
+				new_x[2]=x[2]-(x2[0]-x[0])
+				#print(new_x)
+				temp_overlap_list.append(new_x)
+		if len(temp_overlap_list) > 1:
+			print("ERROR: 3 of your images are overlapping, currently cannot accomodate")
+			sys.exit("3 of your images are overlapping, currently cannot accomodate")	
+		elif  len(temp_overlap_list) == 1:
+			overlap_list.append(temp_overlap_list[0])
+			#assuming image to left
+#			assoc_x_list.append(x)
+			for m, link in enumerate(x_list):
+				#print(link-match_x, x[0])
+				if link-match_x == x[0]:
+					print(link-match_x, x[0])
+					assoc_x_list.append([link,y_list[m],width_list[m],height_list[m]])
+			temp_overlap_list=[]
+		if not overlap_list:
+			print("ERROR: expecting overlap")
+			sys.exit("expecting overlap")		
+#	for index in range(0,len(width_list)):
+#		if width_list[index][-1] == x_list[0][-1]:
+#			right_x=int(width_list[index][:-2])+int(x_list[0][:-2])
+#		else:#will not work for more than 2 tiles
+#			width=width_list[index]
+#	for index in range(0,len(width_list)):
+#		if width[-1] == x_list[index][-1]:	
+#			x_overlap=right_x-int(x_list[index][:-2])
+#			new_x=int(x_list[index][:-2])
+#			print(right_x)
+#			print(x_overlap)
+#			
+#	for index in range(0,len(width_list)):
+#		if height_list[index][-1] == y_list[0][-1]:
+#			down_y=int(height_list[index][:-2])+int(y_list[0][:-2])
+#		else:#will not work for more than 2 tiles
+#			height=height_list[index]
+#	for index in range(0,len(width_list)):
+#		if height[-1] == y_list[index][-1]:	
+#			y_overlap=down_y-int(y_list[index][:-2])
+#			new_y=int(y_list[index][:-2])
+#			print(down_y)
+#			print(y_overlap)
+	print(overlap_list, assoc_x_list)	
+	return overlap_list, assoc_x_list
 
 def remove_tiles(tiles=None):
 	for tile in tiles:
@@ -436,29 +581,63 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	filenames_values[0] = OV_file
 	return filenames_keys, filenames_values
 	
-def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern_3=None, roi=None): #layerset=None, project=None
-	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual");
-	title=imp.getTitle()
-	ROI=imp.setRoi(roi[0],roi[1],roi[2],roi[3]);
-	print(imp.getDimensions())
+def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern_3=None, roi=None, crop_roi=None, assoc_roi=None): #layerset=None, project=None
+	print("in")
+	for m, r in enumerate(roi):
+		for n, assoc_r in enumerate(assoc_roi):
+			print(r,assoc_r)
+			#assuming there is no two images at the same x coordinate, which there shouldn't
+			if r.x == assoc_r[0]:
+#				print(r,assoc_r)
+				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual");
+				title=imp.getTitle()
+				cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0]))
+				print("cropper",cropper)
+				#ROI=imp.setRoi(r.x,r.y,r.width-crop_roi[n][2]+300,r.height);
+				print(imp.getDimensions())
+				print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
+				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
+				imp=imp.crop("stack")
+				output_scaled=make_dir(joint_folder, "_"+str(n),imp, title, windows, True)
+				OV_file=filter(pattern_3.match, os.listdir(output_scaled))
+				OV_file=file_sort(OV_file)
+				filenames_keys[m] = output_scaled
+				filenames_values[m] = OV_file
+#				
+#				
+#	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual");
+#	title=imp.getTitle()
+##	print(title)
+##	ROI=imp.setRoi(roi[0],roi[1],roi[2],roi[3]);
+#	cropper=int(-float(0.4)*float(crop_roi[0]+crop_roi[2])+float(crop_roi[0]))
+#	print("cropper",cropper)
+#	#print(-float(0.4)*float(roi[0]+roi[2])+float(roi[0]))
+##	ROI=imp.setRoi(roi[0]+cropper,roi[1],roi[2],roi[3]);
+##	ROI=imp.setRoi(roi[0].x,roi[0].y,roi[0].width-cropper,roi[0].height);
+#	ROI=imp.setRoi(roi[0].x,roi[0].y,roi[0].width-crop_roi[2]+300,roi[0].height);
+##	ROI=imp.setRoi(roi[0]+350,roi[1],roi[2],roi[3]);
+#	#print(roi[0]+roi[2]-roi[0]+350,(float(roi[0]-350)/float(roi[0]+roi[2])))
+#	#print(imp.getDimensions())
 #	imp=imp.crop("stack")
-	IJ.setBackgroundColor(0, 0, 0)
-	IJ.run(imp, "Clear", "slice")
-	old_dim=imp.getDimensions()
-#	width=imp.getDimensions()[0]*size
-#	height=imp.getDimensions()[1]*size
-#	#resize images
-#	imp = imp.resize(width, height, "none");
-	print(old_dim, imp.getDimensions())
-	#multiple files
-	#mac or windows
-	Title=imp.setTitle("")
-#	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True)
-	output_scaled=make_dir(joint_folder, "_"+str(0), imp, "/"+str(0),windows, True)
-	OV_file=filter(pattern_3.match, os.listdir(output_scaled))
-	OV_file=file_sort(OV_file)
-	filenames_keys[0] = output_scaled
-	filenames_values[0] = OV_file
+##	IJ.setBackgroundColor(0, 0, 0)
+##	IJ.run(imp, "Clear", "slice")
+##	old_dim=imp.getDimensions()
+##	width=imp.getDimensions()[0]*size
+##	height=imp.getDimensions()[1]*size
+##	#resize images
+##	imp = imp.resize(width, height, "none");
+#	#print(old_dim, imp.getDimensions())
+#	#multiple files
+#	#mac or windows
+#	Title=imp.setTitle("")
+##	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True)
+#	output_scaled=make_dir(joint_folder, "_"+str(0),imp, title, windows, True)
+##	output_scaled=make_dir(joint_folder, "_"+str(0), imp, "/"+str(0),windows, True)
+##	output_scaled=make_dir(joint_folder, "_", imp, "/"+str(0),windows, True)
+#	OV_file=filter(pattern_3.match, os.listdir(output_scaled))
+#	OV_file=file_sort(OV_file)
+#	filenames_keys[0] = output_scaled
+#	filenames_values[0] = OV_file
 	return filenames_keys, filenames_values	
 	
 #removes the OV tile
@@ -473,7 +652,11 @@ def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=Fal
 	export_type=0 #GRAY8
 	backgroundColor = Color(0,0,0,0)
 	scale = 1.0
-	#process variables
+	#additional processing variables (gaussian blur, CLAHE )
+	sigmaPixels=0.7
+	blocksize = 300
+	histogram_bins = 256
+	maximum_slope = 1.5
 	mask = "*None*"
 	fast = True
 	process_as_composite = False
@@ -508,6 +691,6 @@ def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=Fal
 			                    blocksize,
 			                    histogram_bins,
 			                    maximum_slope,
-			                    composite,
-			                    mask)
+			                    mask,
+			                    composite)
 		FileSaver(imp).saveAsTiff(output_dir + "/" + str(i + 1) + ".tif") #saves file to output directory
