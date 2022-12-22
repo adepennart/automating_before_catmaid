@@ -15,6 +15,7 @@ List of "non standard modules"
 	No non standard modules are used in the program.
 
 Procedure:
+
 	1. upload first stack
 	2. align
 	3. lock in place
@@ -47,6 +48,10 @@ known error:
     16. pattern check
     17. should be able to fix, inversion, which layer goes where and model used for montage(affine, translation etc.)
    	18. if one tile shouldn't bother aligning
+   	19. pulled out aligned porject not test
+   	20. test whether the trakem2 folders are in the right parent folders
+   	21. when setting background colour to black for crop not transparent
+   	
     
 loosely based off of Albert Cardona 2011-06-05 script
 
@@ -93,21 +98,13 @@ loosely based off of Albert Cardona 2011-06-05 script
 #might not need all these modules
 import os, re, sys
 
-#from ini.trakem2.display import Displayable
-##personal modules
-##print(sys.path)
-#from import_module_test import pre_montage
 #fix this so that it works anywhere
 #sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid/import_module_test")
 sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid")
 
 #import pre_montage
-#from testing_init import count
-from pre_montage import *
-#from montage import *
-#count()
-
-
+#from pre_montage import *
+from functions import *
 # variables
 # --------------------------------------------------------------------------------------
 #joint_folder=[]
@@ -118,12 +115,15 @@ pattern_2 = re.compile(".*_z[\d]_.*\.tif")
 pattern_3 = re.compile(".*[\d]*.tif")
 pattern_xml = re.compile(".*test\.xml")
 roi_list=[]
+crop_roi_list=[]
+assoc_roi_list=[]
 tiles_list=[]
 project_list=[]
 file_keys_big_list=[]
 file_values_big_list=[]
 proj_folds=[]
 numThreads=1
+project=""
 #additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=0.7
 blocksize = 300
@@ -146,47 +146,75 @@ elif model_index == "affine":
 
 #func: get string of folder paths
 folder = folder.getAbsolutePath()
-#folder_2 = folder_2.getAbsolutePath()
 output_dir = output_dir.getAbsolutePath()
 
 
 #main
 # --------------------------------------------------------------------------------------
+#make folders
 grand_joint_folder=mut_fold(folder,output_dir,windows)
 OV_folder_list=folder_find(folder,windows)
-#NO_folder_list=folder_find(folder_2,windows)
-test_dir= make_dir(grand_joint_folder,  "test_"+project_name)
+if test:
+	test_dir= make_dir(grand_joint_folder,  "test_0_"+project_name)
 proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name)
-large_OV_interim= make_dir(grand_joint_folder, "OV_interim")
-#large_NO_interim= make_dir(grand_joint_folder, "NO_interim")
-#if len(OV_folder_list) != len(NO_folder_list):
-#	sys.exit("need same folder number for OV and NO" )
+if inverted_image:
+	large_OV_interim= make_dir(grand_joint_folder, "invert_interim_1"+project_name)
+#find files and paths and test alignment for each substack
 for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
-#	joint_folder=mut_fold(OV_folder_list[num],NO_folder_list[num],windows)
-#	filenames_keys, filenames_values=file_find(None, OV_folder_list[num], windows, pattern_1, pattern_2)
-	filenames_keys, filenames_values=file_find(None, OV_folder_list[num], windows, pattern_1, pattern_3)
+	sub_OV_folders=folder_find(OV_folder_list[num], windows)
+#	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_2)
+	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_3)
 #	print(filenames_keys, filenames_values)
 	if test:
-#		dup_find(filenames_keys,filenames_values)
-		#Creates a TrakEM2 project
 		sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
-		project = Project.newFSProject("blank", None, sub_dir)
-		# OR: get the first open project
-		# project = Project.getProjects().get(0)
-		#adjust properties window
-		project.adjustProperties()
-		#creates initial collection of layers variable
-		layerset = project.getRootLayerSet()
+		file_list= os.listdir(sub_dir)
+#		print(file_list)
+#		print(temp_proj_name+"test")
+		if temp_proj_name+"test.xml" in file_list:
+			gui = GUI.newNonBlockingDialog("Overwrite?")
+			gui.addMessage(" Press ok to overwrite project file?")
+			gui.showDialog()
+			if gui.wasOKed():
+				if windows:
+					os.remove(sub_dir+"\\"+temp_proj_name+"test")
+				if not windows:
+					os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
+			elif not gui.wasOKed():
+				sys.exit()
+		project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
+		project.adjustProperties() #adjust properties window
+		layerset = project.getRootLayerSet() #creates initial collection of layers variable
 		#create cropped area 
 		#test ti see if inverted, montage success and aling success
 		#need to invert Ov and not NO
-		roi, tiles = tester(filenames_keys, 
-							filenames_values, project, 
-							test_dir, sub_dir, windows, 
-							temp_proj_name, None, 
-							model_index, octave_size, invert_image)
-#		roi_list.append(roi)
+		#change
+		temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys, 
+													filenames_values, 
+													test_dir, windows, 
+													temp_proj_name, inverted_image)
+#		roi, tiles = prep_test_align(filenames_keys, 
+#							filenames_values, project, 
+#							test_dir, sub_dir, windows, 
+#							temp_proj_name, model_index,
+#							octave_size, invert_image)
+		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
+		roi, tiles =align_layers(model_index, octave_size, layerset,True)
+		layerset.setMinimumDimensions() #readjust canvas to only NO tiles
+		#print(roi)
+		if len(filenames_keys) != 1: 
+			new_roi, assoc_roi =overlap_area(roi)
+		#	print(new_roi)
+			crop_roi_list.append(new_roi)
+			assoc_roi_list.append(assoc_roi)
+		else:
+			crop_roi_list.append(roi)
+			#not sure if needed
+			assoc_roi_list.append(roi)
+		roi_list.append(roi)
+		#spaghetti code
+		project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)							
+		
 		tiles_list.append(tiles)
 		#fix for windows
 		project_list.append(temp_proj_name+"test.xml")
@@ -198,8 +226,8 @@ for num in range(0,len(OV_folder_list)):
 #	project.saveAs(os.path.join(sub_dir, project_name+"_test"), False)
 	#print(roi_list)
 	#not sure how max works here
-print(file_keys_big_list)
-		
+#print(file_keys_big_list)
+	
 if test:	
 	#find max ROI
 	#potential gui
@@ -217,29 +245,51 @@ if test:
 			roi_list=[]
 			octave_size=octave_size+200
 			for num in range(0,len(OV_folder_list)):
-				project = Project.getProject(project_list[num])
+				project = Project.getProject(project_list[num]) #assumes that there are no other projects open
 				roi, tiles =align_layers(model_index, octave_size, layerset)
-#				roi_list.append(roi)
+				if len(filenames_keys) != 1: 
+					new_roi, assoc_roi =overlap_area(roi)
+					print(new_roi)
+					crop_roi_list.append(new_roi)
+					assoc_roi_list.append(assoc_roi)
+				else:
+					crop_roi_list.append(roi)
+					#not sure if needed
+					assoc_roi_list.append(roi)
+				roi_list.append(roi)
 				tiles_list.append(tiles)
+
 #	max_roi=max(roi_list)
 
 try:
 	project_list[1]
 except IndexError:
-	proj_folds=folder_find(proj_dir,windows)
-	print(proj_folds)
+	proj_folds=folder_find(proj_dir,windows) #add function functionality to send gui if you want to make a new folder
+	#print(proj_folds)
+	projects=Project.getProjects()
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
 		xml_filepath = os.path.join(proj,xml_file[0])
-		project=Project.openFSProject(xml_filepath, True)
+#		print(Project.getProjects())
+#		print(type(Project.getProjects().get(0)))
+#		print((xml_file[0].split("."))[0])
+#		if str(Project.getProjects().get(0)) == (xml_file[0].split("."))[0]:
+#			project = Project.getProjects().get(0)
+		for projected in projects:
+			if (xml_file[0].split("."))[0] in str(projected):
+				project = Project.getProject(projected)
+				break
+		if not project:
+			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
-#project_list=file_sort(project_list)
-print(project_list)
+		project=''
+project_list=file_sort(project_list)
+#print(project_list)
 #inverts image
 for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
-	print((project_list[num]))
-	print(type(project_list[num]))
+	#print((project_list[num]))
+	#print(type(project_list[num]))
 #	xml_file=filter(pattern_xml.match, os.listdir(proj_folds[num]))
 #	xml_filepath = os.path.join(proj_folds[num],xml)
 #	project.openFSProject(xml_filepath, True)
@@ -248,13 +298,13 @@ for num in range(0,len(OV_folder_list)):
 #	print(match[0])
 #	project = Project.getProject(str(match[0]))
 	project = Project.getProject(project_list[num])
-#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
+	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
 #	project = Project.newFSProject("blank", None, sub_dir)
-	print(project)
+	#print(project)
 	try:
 		remove_tiles(tiles_list[num])
 	except IndexError:
-		print(project)
+		#print(project)
 		layerset = project.getRootLayerSet()
 		for layer in layerset.getLayers():
 		  	tiles = layer.getDisplayables(Patch)
@@ -265,32 +315,55 @@ for num in range(0,len(OV_folder_list)):
 	if test:
 		if inverted_image:
 			#make list of filenammes keys and values for each project
-			output_inverted=make_dir(large_OV_interim, "OV_interim"+str(num))
+			#print(roi_list, crop_roi_list)
+			output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num))
 			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3,0)
+			if len(filenames_keys) != 1:
+				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_project_name")
+				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
+				#print(output_scaled, roi_list[num], crop_roi_list[num])
+				filenames_keys, filenames_values = remove_area(filenames_keys, 
+																filenames_values, 
+																output_scaled, windows, 
+																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
 		#crop image
-#		if size != 1:
-#			large_OV_interim= make_dir(grand_joint_folder, "OV_interim")
-#			output_scaled=make_dir(large_OV_interim, "OV_interim"+str(num))
-#			filenames_keys, filenames_values = resize_image(filenames_keys, 
-#															filenames_values, 
-#															output_scaled, windows, 
-#															temp_proj_name, pattern_3, size, max_roi)
+		elif not inverted_image:
+			if len(filenames_keys) != 1:
+				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_project_name")
+				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
+				filenames_keys, filenames_values = remove_area(filenames_keys, 
+																filenames_values, 
+																output_scaled, windows, 
+																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
+		#crop image)
 	print(filenames_keys, filenames_values)
 	#add stack to trakem2	
 	#fix add_patch	
-#	layerset=add_patch(filenames_keys, filenames_values, project, 1, len(filenames_values[0]))												
-	layerset=add_patch(filenames_keys, filenames_values, project, 0, len(filenames_values[0]))
+#	layerset=add_patch(filenames_keys, filenames_values, project, 1, len(filenames_values[0]))		
+	#print([filenames_keys[0]], filenames_values[0])										
+	#spaghetti code
+	filenames_keys=file_sort(filenames_keys,0,True)
+	filenames_values=file_sort(filenames_values,0,True)
+	print(filenames_keys, filenames_values)
+	layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0]))
+	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
+	if len(filenames_keys) != 1:
+		layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0)
+		align_layers(model_index, octave_size, layerset)
+	
+	#alignMultiLayerMosaicTask(layerset.getLayers(), Patch nail, Align.Param cp, Align.ParamOptimize p, Align.ParamOptimize pcp, False, False, False, False, False) 
 	#align NO to OV
 #	for layer in layerset.getLayers():
 #	  	tiles = layer.getDisplayables(Patch) #get list of tiles
 #		layerset.setMinimumDimensions() #readjust canvas size
 #		tiles[0].setLocked(True) #lock the OV stack
-#	Align.alignLayersLinearly(layerset.getLayers(), numThreads, Filter(tiles[0]))
-	align_layers(model_index, octave_size, layerset,True)
-	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
+#	Align.alignLayersLinearly(layerset.getLayers(), numThreads, "0.tif")
+#	align_layers(model_index, octave_size, layerset,True)
+#	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
 	#	Saves the project with OV
+	#print(sub_dir, temp_proj_name+"aligned")
 	if proj_folds:
-		project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"aligned"), False)
+		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	else:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	#removes the OV tile
@@ -300,9 +373,12 @@ for num in range(0,len(OV_folder_list)):
 	#exports images
 	mini_dir= make_dir(output_dir,  "export_"+str(num))
 	export_image(layerset, mini_dir)#, canvas_roi=False, processed=False)
+	export_image(layerset, mini_dir, canvas_roi=True)#, canvas_roi=False, processed=False)
 	#	Saves the project without OV
 #	if proj_folds:
 #		project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"without_OV"), False)
 #	else:
 #		project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_OV"), False)
+
+
 print("Done!")

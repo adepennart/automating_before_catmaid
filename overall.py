@@ -39,6 +39,7 @@ known error:
     12. whe nrunning without test, if trackem2 project already open will not run, needs to be opened to work
     13. OV interim is not full if not scaled
     14. pattern change if you are using NO_interim
+    15. save test project after Gui oked
     
 loosely based off of Albert Cardona 2011-06-05 script
 
@@ -114,6 +115,7 @@ project_list=[]
 file_keys_big_list=[]
 file_values_big_list=[]
 proj_folds=[]
+project=''
 #additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=0.7
 blocksize = 300
@@ -154,13 +156,26 @@ if len(OV_folder_list) != len(NO_folder_list):
 for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
 	joint_folder=mut_fold(OV_folder_list[num],NO_folder_list[num],windows)
-	filenames_keys, filenames_values=file_find(OV_folder_list[num],NO_folder_list[num], windows, pattern_1, pattern_2)
-#	filenames_keys, filenames_values=file_find(OV_folder_list[num],NO_folder_list[num], windows, pattern_1, pattern_3)
-#	print(filenames_keys, filenames_values)
+	all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
+#	filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_2)
+	filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
+	print(filenames_keys, filenames_values)
 	if test:
 		dup_find(filenames_keys,filenames_values)
 		#Creates a TrakEM2 project
 		sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
+		file_list= os.listdir(sub_dir)
+		if temp_proj_name+"test.xml" in file_list:
+			gui = GUI.newNonBlockingDialog("Overwrite?")
+			gui.addMessage(" Press ok to overwrite project file?")
+			gui.showDialog()
+			if gui.wasOKed():
+				if windows:
+					os.remove(sub_dir+"\\"+temp_proj_name+"test")
+				if not windows:
+					os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
+			elif not gui.wasOKed():
+				sys.exit()
 		project = Project.newFSProject("blank", None, sub_dir)
 		# OR: get the first open project
 		# project = Project.getProjects().get(0)
@@ -169,13 +184,25 @@ for num in range(0,len(OV_folder_list)):
 		#creates initial collection of layers variable
 		layerset = project.getRootLayerSet()
 		#create cropped area 
-		roi, tiles = find_crop_area(filenames_keys, 
-							filenames_values, project, 
-							test_dir, sub_dir, windows, 
-							temp_proj_name, size, 
-							model_index, octave_size, invert_image)
-		roi_list.append(roi)
+		#needs to edit
+		temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys[1:], 
+																	filenames_values[1:], 
+																	test_dir, windows, 
+																	temp_proj_name, invert_image, size)
+		temp_filenames_keys = [filenames_keys[0]]+temp_filenames_keys
+		temp_filenames_values =	[filenames_values[0]]+temp_filenames_values									
+#		roi, tiles = prep_test_align(filenames_keys, 
+#							filenames_values, project, 
+#							test_dir, sub_dir, windows, 
+#							temp_proj_name, model_index,
+#							octave_size, invert_image)
+		print(temp_filenames_keys, temp_filenames_values)
+		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
+		roi, tiles =align_layers(model_index, octave_size, layerset)
+		project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
+		layerset.setMinimumDimensions() #readjust canvas to only NO tiles
 		tiles_list.append(tiles)
+		roi_list.append(roi)
 		#fix for windows
 		project_list.append(temp_proj_name+"test.xml")
 	file_keys_big_list.append(filenames_keys)
@@ -204,11 +231,13 @@ if test:
 			roi_list=[]
 			octave_size=octave_size+200
 			for num in range(0,len(OV_folder_list)):
-				project = Project.getProject(project_list[num])
+				project = Project.getProject(project_list[num]) #assumes that there are no other projects open
 				roi, tiles =align_layers(model_index, octave_size, layerset)
 				roi_list.append(roi)
 				tiles_list.append(tiles)
+	print(roi_list)
 	max_roi=max(roi_list)
+	print(max_roi)
 
 try:
 	project_list[1]
@@ -218,9 +247,15 @@ except IndexError:
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
 		xml_filepath = os.path.join(proj,xml_file[0])
-		project=Project.openFSProject(xml_filepath, True)
+		for proj in Project.getProjects():
+			if (xml_file[0].split("."))[0] in str(proj):
+				project = Project.getProject(proj)
+				break
+		if not project:
+			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
-#project_list=file_sort(project_list)
+		project=''
+project_list=file_sort(project_list)
 print(project_list)
 #inverts image
 for num in range(0,len(OV_folder_list)):
@@ -235,7 +270,7 @@ for num in range(0,len(OV_folder_list)):
 #	print(match[0])
 #	project = Project.getProject(str(match[0]))
 	project = Project.getProject(project_list[num])
-#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
+	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
 #	project = Project.newFSProject("blank", None, sub_dir)
 	print(project)
 	try:
@@ -282,7 +317,7 @@ for num in range(0,len(OV_folder_list)):
 	export_image(layerset, mini_dir)#, canvas_roi=False, processed=False)
 	#	Saves the project without OV
 	if proj_folds:
-		project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"without_OV"), False)
+		project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_OV"), False)
 	else:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_OV"), False)
 print("Done!")
