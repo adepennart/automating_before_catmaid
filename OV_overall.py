@@ -1,56 +1,44 @@
 """
-Title: no_alignment.py
+Title: OV_overall.py
 
-Date: September 7th, 2022
+Date: December 22nd, 2022
 
 Author: Auguste de Pennart
 
 Description:
-	aligns the noduli high resolution images to the overview low resolution images 
+	aligns images in the Z plane and montages them in the x-y plane (useful for OV image stacks)
 
 List of functions:
     No user defined functions are used in the program.
 
 List of "non standard modules"
-	No non standard modules are used in the program.
+	module functions.py used for this script
 
 Procedure:
 
-	1. upload first stack
-	2. align
-	3. lock in place
-	4. add second stack if present
-	5. montage
-
-
-    1. multiple checks to ensure function
-    2. scales OV stack to 4x magnification
-    3. creates trakem2 project
-    4. creates layers and populates with one image from OV and from NO folders
-    5. aligns them/montages them
-    6. exports NO images
+	1. runs test if specificed to find best balues for montaging
+	2. when alignment successful, creates interim interim folder if inverted specificed 
+	3. creates cropped image interim folder for best quality final results
+	4. using Trakem2, images aligned and montaged
+	5. images are exported
+	6. project file is createdt to access images in trakem2
 
 Usage:
 	to be used through Imagej as a script
-	Pressing the bottom left Run button in the Script window will begin script
+	Pressing the bottom left Run button in the Script window will present user with prompt window for running script
 
 known error:
     1. only accepts tif files as input
     5. should check if interim folder full (kind of does)
     6. get more threads for resizing step
-    8. should open project, if already opened
     9. have time stamps
-    11. if folder name is the same but different folders , returns error
     12. whe nrunning without test, if trackem2 project already open will not run, needs to be opened to work
-    13. OV interim is not full if not scaled
-    14. pattern change if you are using NO_interim
-    15. fix error when file get saved with name_1, can't find it after
     16. pattern check
     17. should be able to fix, inversion, which layer goes where and model used for montage(affine, translation etc.)
    	18. if one tile shouldn't bother aligning
    	19. pulled out aligned porject not test
    	20. test whether the trakem2 folders are in the right parent folders
-   	21. when setting background colour to black for crop not transparent
+   	22. you need two terabytes to run this script (3-4 times the space it currently takes)
    	
     
 loosely based off of Albert Cardona 2011-06-05 script
@@ -79,15 +67,9 @@ loosely based off of Albert Cardona 2011-06-05 script
 """
 
 #@ File (label = "OV directory", style = "directory") folder
-##@ File (label = "NO directory or parent directory only containing NO directories", style = "directory") folder_2
-##@ File (label = "OV interim directory", style = "directory") output_scaled
-#this needs to be silent
-##@ File (label = "test interim directory", style = "directory",required=False) test_interim
-##@ File (label = "NO interim directory", style = "directory",required=False) output_inverted
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ boolean (label = "Invert images") inverted_image
-##@ int (label = "rescale OV factor", default=4, min=0, max=10 ) size
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
 #@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
 #@ boolean (label = "using a windows machine") windows
@@ -98,20 +80,29 @@ loosely based off of Albert Cardona 2011-06-05 script
 #might not need all these modules
 import os, re, sys
 
-#fix this so that it works anywhere
-#sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid/import_module_test")
-sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid")
+#print(os.path.realpath(__file__))
+#script_path=os.path.realpath(__file__)
+#script_path=os.path.abspath(__file__)
+script_path = os.path.dirname(sys.argv[0]) 
+script_path_new=""
+if windows:
+		match_1=re.findall(".[^\\\\]+",script_path)
+elif not windows:
+	match_1=re.findall("\/.[^\/]+",script_path)
+for n in range(0, len(match_1)-1):
+	script_path_new+=match_1[n]
+sys.path.append(script_path_new)
+#could accept error and say to place functions.py in same folder as OV_overall
 
-#import pre_montage
-#from pre_montage import *
 from functions import *
 # variables
 # --------------------------------------------------------------------------------------
-#joint_folder=[]
-pattern_1 = re.compile(".*_z[\d]_.*\.tif")
+#vision group SBEM pattern
 #pattern_1 = re.compile("([\d]+).*\.tif")
-pattern_2 = re.compile(".*_z[\d]_.*\.tif")
 #pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
+#alternate patterns, but why not make more general pattern, just find tif
+pattern_1 = re.compile(".*_z[\d]_.*\.tif")
+pattern_2 = re.compile(".*_z[\d]_.*\.tif")
 pattern_3 = re.compile(".*[\d]*.tif")
 pattern_xml = re.compile(".*test\.xml")
 roi_list=[]
@@ -185,19 +176,11 @@ for num in range(0,len(OV_folder_list)):
 		project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
 		project.adjustProperties() #adjust properties window
 		layerset = project.getRootLayerSet() #creates initial collection of layers variable
-		#create cropped area 
-		#test ti see if inverted, montage success and aling success
-		#need to invert Ov and not NO
-		#change
+		#also should crop too
 		temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys, 
 													filenames_values, 
 													test_dir, windows, 
 													temp_proj_name, inverted_image)
-#		roi, tiles = prep_test_align(filenames_keys, 
-#							filenames_values, project, 
-#							test_dir, sub_dir, windows, 
-#							temp_proj_name, model_index,
-#							octave_size, invert_image)
 		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
 		roi, tiles =align_layers(model_index, octave_size, layerset,True)
 		layerset.setMinimumDimensions() #readjust canvas to only NO tiles
@@ -212,9 +195,7 @@ for num in range(0,len(OV_folder_list)):
 			#not sure if needed
 			assoc_roi_list.append(roi)
 		roi_list.append(roi)
-		#spaghetti code
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)							
-		
 		tiles_list.append(tiles)
 		#fix for windows
 		project_list.append(temp_proj_name+"test.xml")
@@ -223,23 +204,15 @@ for num in range(0,len(OV_folder_list)):
 	file_values_big_list.append(filenames_values)
 	#	Saves the project without OV
 	#not ideal should save differently if windows
-#	project.saveAs(os.path.join(sub_dir, project_name+"_test"), False)
 	#print(roi_list)
-	#not sure how max works here
 #print(file_keys_big_list)
 	
 if test:	
-	#find max ROI
-	#potential gui
 	while 1: 
 		gui = GUI.newNonBlockingDialog("Aligned?")
 		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 		gui.showDialog()
 		if gui.wasOKed():
-#			for num in range(0,len(OV_folder_list)):
-#				project = Project.getProject(project_list[num])
-#				project.remove(False)
-#				project.removeProjectThing(layerset,False, True,1)
 			break
 		else:
 			roi_list=[]
@@ -259,8 +232,6 @@ if test:
 				roi_list.append(roi)
 				tiles_list.append(tiles)
 
-#	max_roi=max(roi_list)
-
 try:
 	project_list[1]
 except IndexError:
@@ -273,8 +244,6 @@ except IndexError:
 #		print(Project.getProjects())
 #		print(type(Project.getProjects().get(0)))
 #		print((xml_file[0].split("."))[0])
-#		if str(Project.getProjects().get(0)) == (xml_file[0].split("."))[0]:
-#			project = Project.getProjects().get(0)
 		for projected in projects:
 			if (xml_file[0].split("."))[0] in str(projected):
 				project = Project.getProject(projected)
@@ -290,16 +259,9 @@ for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
 	#print((project_list[num]))
 	#print(type(project_list[num]))
-#	xml_file=filter(pattern_xml.match, os.listdir(proj_folds[num]))
-#	xml_filepath = os.path.join(proj_folds[num],xml)
-#	project.openFSProject(xml_filepath, True)
-#	match=re.search("(.+)\.xml",project_list[num]).group()
-#	match=re.findall("(.+)\.xml",project_list[num])
 #	print(match[0])
-#	project = Project.getProject(str(match[0]))
 	project = Project.getProject(project_list[num])
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
-#	project = Project.newFSProject("blank", None, sub_dir)
 	#print(project)
 	try:
 		remove_tiles(tiles_list[num])
@@ -335,16 +297,12 @@ for num in range(0,len(OV_folder_list)):
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
-		#crop image)
 	print(filenames_keys, filenames_values)
-	#add stack to trakem2	
-	#fix add_patch	
-#	layerset=add_patch(filenames_keys, filenames_values, project, 1, len(filenames_values[0]))		
 	#print([filenames_keys[0]], filenames_values[0])										
-	#spaghetti code
 	filenames_keys=file_sort(filenames_keys,0,True)
 	filenames_values=file_sort(filenames_values,0,True)
 	print(filenames_keys, filenames_values)
+	#add stack to trakem2
 	layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0]))
 	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
 	if len(filenames_keys) != 1:
@@ -368,17 +326,9 @@ for num in range(0,len(OV_folder_list)):
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	#removes the OV tile
 	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
-	#remove OV from layers
-#	remove_OV(layerset,0)
 	#exports images
 	mini_dir= make_dir(output_dir,  "export_"+str(num))
 	export_image(layerset, mini_dir)#, canvas_roi=False, processed=False)
 	export_image(layerset, mini_dir, canvas_roi=True)#, canvas_roi=False, processed=False)
-	#	Saves the project without OV
-#	if proj_folds:
-#		project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"without_OV"), False)
-#	else:
-#		project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_OV"), False)
-
 
 print("Done!")

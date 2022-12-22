@@ -85,20 +85,11 @@ loosely based off of Albert Cardona 2011-06-05 script
 # ----------------------------------------------------------------------------------------
 #might not need all these modules
 import os, re, sys
-#from ini.trakem2.display import Displayable
-##personal modules
-##print(sys.path)
-#from import_module_test import pre_montage
-#fix this so that it works anywhere
-#sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid/import_module_test")
-sys.path.append("/Users/lamarcki/Desktop/automating_before_catmaid")
 
-#import pre_montage
-#from testing_init import count
-from pre_montage import *
-#from montage import *
-#count()
-
+#script_path=os.path.abspath(__file__)
+script_path = os.path.dirname(sys.argv[0]) 
+sys.path.append(script_path)
+from functions import *
 
 # variables
 # --------------------------------------------------------------------------------------

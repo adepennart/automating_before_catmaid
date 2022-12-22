@@ -1,7 +1,7 @@
 """
-Title: no_alignment.py
+Title: functions.py
 
-Date: September 7th, 2022
+Date: December 22nd, 2022
 
 Author: Auguste de Pennart
 
@@ -114,10 +114,6 @@ def mut_fold(folder_1=None,folder_2=None,is_windows=None):
 
 #func:sort_
 def file_sort(file_list=None,sort_by_digit=0, rev=False):
-#	variables:
-#	filenames_keys=[]
-#	filenames_values=[]
-
 	for  n, filename in enumerate(file_list):
 		for m, filename_2 in enumerate(file_list[n+1:len(file_list)]):
 			try:
@@ -238,16 +234,13 @@ def make_dir(path=None, dir_name=None, file_var=None, filename=None, is_windows=
 
 #func: invert
 def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern_3=None, file_start=1):
-#	output_inverted=make_dir(joint_folder, "NO_interim")
 	for n, fold in enumerate(filenames_keys[file_start:]):
 		for m, filename in enumerate(filenames_values[file_start:][n]):
 			filepath = os.path.join(fold,filename)
 			imp=IJ.openImage(filepath);
 			IJ.run(imp, "Invert", "");
-	#		imp=imp.getProcessor().invert()
 			sub_dir=make_dir(joint_folder, "_"+str(n), imp, "/"+str(m),windows, True)
 			print(sub_dir)
-#			IJ.saveAs(imp, "Tiff", sub_dir+"/"+str(m));
 			NO_file=filter(pattern_3.match, os.listdir(sub_dir))
 			NO_file=file_sort(NO_file)
 			filenames_keys[n+file_start] = sub_dir
@@ -342,52 +335,12 @@ def prep_test_align(filenames_keys=None, filenames_values=None,test_folder=None,
 	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
 		#invert
 		if invert_image:
-			print(here)
 			IJ.run(imp, "Invert", "");
 		#mac or windows
 		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
 		temp_filenames_keys[num]=sub_dir
 		temp_filenames_values[num]=[title]
-#	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
-#	roi, tiles =align_layers(model_index, octave_size, layerset,True)
-#	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)
 	return temp_filenames_keys, temp_filenames_values
-#	return roi, tiles
-#
-##def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, model_index=None, octave_size=None, invert_image=False,size=None): #layerset=None, pattern_3=None
-#def prep_test_align_NO(filenames_keys=None, filenames_values=None,test_folder=None, windows=None, project_name=None,invert_image=False,size=None):
-#	temp_filenames_keys=[filenames_keys[0]]
-#	temp_filenames_values=[filenames_values[0]]
-#	test_interim=make_dir(test_folder, "substack_"+re.findall("\d+",project_name)[-1])
-##	for num in range(1,len(filenames_keys)):#do we need this for NO?
-#	for num in range(1,len(filenames_keys)):
-##		print(filenames_values[num][0])
-#		path=os.path.join(filenames_keys[num], filenames_values[num][0]) #this (also in invert) could become funciton
-#		imp=IJ.openImage(path);
-#		title=imp.getTitle()
-#		if size:
-#			if size != 1:
-#				old_dim=imp.getDimensions()
-#				width=int((imp.getDimensions()[0])*(float(1)/float(size)))
-#				height=int((imp.getDimensions()[1])*(float(1)/float(size)))
-#				#resize images
-#				imp = imp.resize(width, height, "none");
-#	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
-#		#invert
-#		if invert_image:
-#			IJ.run(imp, "Invert", "");
-#		#mac or windows
-#		sub_dir = make_dir(test_interim, "_"+str(num), imp, title, windows, True)
-#		temp_filenames_keys.append(sub_dir)
-#		temp_filenames_values.append([title])
-##	layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
-##	roi, tiles =align_layers(model_index, octave_size, layerset,True)
-##	project.saveAs(os.path.join(proj_folder, project_name+"test"), False)
-#	return temp_filenames_keys, temp_filenames_values
-##	return roi, tiles
-#def overlap_area(ROI=None):
-
-
 
 def overlap_area(ROI=None):
 	#file_sort(ROI)
@@ -424,41 +377,6 @@ def overlap_area(ROI=None):
 			new_y_list.append(new_y)
 	else:
 		new_y_list=y_list	
-				
-#	for n, r in  enumerate(ROI):
-#		x_list.append(str(r.x)+"_"+str(n))
-#		y_list.append(str(r.y)+"_"+str(n))
-#		width_list.append(str(r.width)+"_"+str(n))
-#		height_list.append(str(r.height)+"_"+str(n))
-#	print(x_list,y_list,width_list, height_list)
-#	for x in x_list:
-#		if "-" in x:
-#			temp_match = int(re.findall("(\d+)",str(x))[0])
-##			print("found -", int(x[:-2])+match)
-#			if temp_match > match:
-#				match = temp_match
-#	if match:
-#		for x in x_list:
-#			print("found -", int(x[:-2])+match)
-#			x=str(int(x[:-2])+match)+x[-2:]
-#			new_x_list.append(x)
-#	else:
-#		new_x_list=x_list
-#	match=0
-#	for y in y_list:
-#		if "-" in y:
-#			temp_match = int(re.findall("(\d+)",str(y))[0])
-#			if temp_match > match:
-#				match = temp_match
-#	if match:
-#		for y in y_list:
-#			y=str(int(y[:-2])+match)+y[-2:]
-#			new_y_list.append(y)
-#	else:
-#		new_y_list=y_list			
-	#print(x_list,y_list)
-#	x_list=file_sort(x_list)
-#	y_list=file_sort(y_list)
 	new_roi=[]
 	roi_list=[]
 	
@@ -469,8 +387,6 @@ def overlap_area(ROI=None):
 		new_roi.append(height_list[index])
 		roi_list.append(new_roi)
 		new_roi=[]
-
-	#	new_x_list=file_sort(new_x_list)
 	#new_roi_list is made to add crop areas after
 	new_roi_list=[]
 	for i in range(0,len(roi_list)):
@@ -528,29 +444,6 @@ def overlap_area(ROI=None):
 		if not overlap_list:
 			print("ERROR: expecting overlap")
 			sys.exit("expecting overlap")		
-#	for index in range(0,len(width_list)):
-#		if width_list[index][-1] == x_list[0][-1]:
-#			right_x=int(width_list[index][:-2])+int(x_list[0][:-2])
-#		else:#will not work for more than 2 tiles
-#			width=width_list[index]
-#	for index in range(0,len(width_list)):
-#		if width[-1] == x_list[index][-1]:	
-#			x_overlap=right_x-int(x_list[index][:-2])
-#			new_x=int(x_list[index][:-2])
-#			print(right_x)
-#			print(x_overlap)
-#			
-#	for index in range(0,len(width_list)):
-#		if height_list[index][-1] == y_list[0][-1]:
-#			down_y=int(height_list[index][:-2])+int(y_list[0][:-2])
-#		else:#will not work for more than 2 tiles
-#			height=height_list[index]
-#	for index in range(0,len(width_list)):
-#		if height[-1] == y_list[index][-1]:	
-#			y_overlap=down_y-int(y_list[index][:-2])
-#			new_y=int(y_list[index][:-2])
-#			print(down_y)
-#			print(y_overlap)
 	print(overlap_list, assoc_x_list)	
 	return overlap_list, assoc_x_list
 
@@ -593,7 +486,6 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 				title=imp.getTitle()
 				cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0]))
 				print("cropper",cropper)
-				#ROI=imp.setRoi(r.x,r.y,r.width-crop_roi[n][2]+300,r.height);
 				print(imp.getDimensions())
 				print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
 				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
@@ -603,41 +495,6 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 				OV_file=file_sort(OV_file)
 				filenames_keys[m] = output_scaled
 				filenames_values[m] = OV_file
-#				
-#				
-#	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual");
-#	title=imp.getTitle()
-##	print(title)
-##	ROI=imp.setRoi(roi[0],roi[1],roi[2],roi[3]);
-#	cropper=int(-float(0.4)*float(crop_roi[0]+crop_roi[2])+float(crop_roi[0]))
-#	print("cropper",cropper)
-#	#print(-float(0.4)*float(roi[0]+roi[2])+float(roi[0]))
-##	ROI=imp.setRoi(roi[0]+cropper,roi[1],roi[2],roi[3]);
-##	ROI=imp.setRoi(roi[0].x,roi[0].y,roi[0].width-cropper,roi[0].height);
-#	ROI=imp.setRoi(roi[0].x,roi[0].y,roi[0].width-crop_roi[2]+300,roi[0].height);
-##	ROI=imp.setRoi(roi[0]+350,roi[1],roi[2],roi[3]);
-#	#print(roi[0]+roi[2]-roi[0]+350,(float(roi[0]-350)/float(roi[0]+roi[2])))
-#	#print(imp.getDimensions())
-#	imp=imp.crop("stack")
-##	IJ.setBackgroundColor(0, 0, 0)
-##	IJ.run(imp, "Clear", "slice")
-##	old_dim=imp.getDimensions()
-##	width=imp.getDimensions()[0]*size
-##	height=imp.getDimensions()[1]*size
-##	#resize images
-##	imp = imp.resize(width, height, "none");
-#	#print(old_dim, imp.getDimensions())
-#	#multiple files
-#	#mac or windows
-#	Title=imp.setTitle("")
-##	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True)
-#	output_scaled=make_dir(joint_folder, "_"+str(0),imp, title, windows, True)
-##	output_scaled=make_dir(joint_folder, "_"+str(0), imp, "/"+str(0),windows, True)
-##	output_scaled=make_dir(joint_folder, "_", imp, "/"+str(0),windows, True)
-#	OV_file=filter(pattern_3.match, os.listdir(output_scaled))
-#	OV_file=file_sort(OV_file)
-#	filenames_keys[0] = output_scaled
-#	filenames_values[0] = OV_file
 	return filenames_keys, filenames_values	
 	
 #removes the OV tile
