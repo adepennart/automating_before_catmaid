@@ -84,14 +84,8 @@ import os, re, sys
 #script_path=os.path.realpath(__file__)
 #script_path=os.path.abspath(__file__)
 script_path = os.path.dirname(sys.argv[0]) 
-script_path_new=""
-if windows:
-		match_1=re.findall(".[^\\\\]+",script_path)
-elif not windows:
-	match_1=re.findall("\/.[^\/]+",script_path)
-for n in range(0, len(match_1)-1):
-	script_path_new+=match_1[n]
-sys.path.append(script_path_new)
+sys.path.append(script_path)
+
 #could accept error and say to place functions.py in same folder as OV_overall
 
 from functions import *
@@ -281,7 +275,7 @@ for num in range(0,len(OV_folder_list)):
 			output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num))
 			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3,0)
 			if len(filenames_keys) != 1:
-				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_project_name")
+				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_"+project_name)
 				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
 				#print(output_scaled, roi_list[num], crop_roi_list[num])
 				filenames_keys, filenames_values = remove_area(filenames_keys, 
@@ -291,7 +285,7 @@ for num in range(0,len(OV_folder_list)):
 		#crop image
 		elif not inverted_image:
 			if len(filenames_keys) != 1:
-				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_project_name")
+				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_"+project_name)
 				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
 				filenames_keys, filenames_values = remove_area(filenames_keys, 
 																filenames_values, 

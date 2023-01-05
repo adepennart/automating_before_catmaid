@@ -478,18 +478,19 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 	print("in")
 	for m, r in enumerate(roi):
 		for n, assoc_r in enumerate(assoc_roi):
-			print(r,assoc_r)
+			#print(r,assoc_r)
 			#assuming there is no two images at the same x coordinate, which there shouldn't
 			if r.x == assoc_r[0]:
-#				print(r,assoc_r)
+				print(r,assoc_r)
 				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual");
 				title=imp.getTitle()
 				cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0]))
 				print("cropper",cropper)
-				print(imp.getDimensions())
-				print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
-				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
-				imp=imp.crop("stack")
+				#print(imp.getDimensions())
+				#print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
+#				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
+#				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+100,crop_roi[n][3]);
+#				imp=imp.crop("stack")
 				output_scaled=make_dir(joint_folder, "_"+str(n),imp, title, windows, True)
 				OV_file=filter(pattern_3.match, os.listdir(output_scaled))
 				OV_file=file_sort(OV_file)
