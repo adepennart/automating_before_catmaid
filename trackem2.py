@@ -171,16 +171,31 @@ elif not filenames_2:
 		#assumes only two different layers
 	
 	
-for filename in filenames_3:
+#for filename in filenames_3:
+#	print(filename)
+#	#find another matching code
+#	match = re.findall("(\d)",filename)
+##	for some reason does not work
+##	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
+#	n_start=int(match[1])
+#	print(n_start)
+#	break
+
+for n, filename in enumerate(filenames_3):
 	print(filename)
 	#find another matching code
 	match = re.findall("(\d)",filename)
 #	for some reason does not work
 #	match = re.search(".*_z(\d)_.*\.tif",filename).group(0)
-	n_start=int(match[1])
-	print(n_start)
-	break
+	if n == 0:
+		n_start=int(match[1])
+	elif n != 0 :
+		num=int(match[1])
+		if num < n_start:
+			n_start=int(match[1])
+print(n_start)
 	
+			
 #for filename in filenames_3:
 #	filename.encode('ascii','ignore')
 
@@ -243,15 +258,56 @@ for i,layer in enumerate(layerset.getLayers()):
 
 # 4. Montage each layer independently
 from mpicbg.trakem2.align import Align, AlignTask
-param = Align.ParamOptimize()  # which extends Align.Param
+from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
+from java.util import HashSet
+
+#select actually imports, just copied
+#https://github.com/templiert/ufomsem/blob/79a02010533f8127deeb0fed04cfc1ea90edb7f0/stitch_align.py
+#import os, time, sys
+#from ij import IJ, Macro
+#import java
+#from java.lang import Runtime
+#from java.awt import Rectangle
+#from java.awt.geom import AffineTransform
+#from java.util import HashSet
+#from ini.trakem2 import Project, ControlWindow
+#from ini.trakem2.display import Patch, Display
+#from ini.trakem2.imaging import StitchingTEM
+#from ini.trakem2.imaging.StitchingTEM import PhaseCorrelationParam
+#from mpicbg.trakem2.align import RegularizedAffineLayerAlignment
+
+
+#param = RegularizedAffineLayerAlignment.Param()
+param = Align.ParamOptimize(desiredModelIndex=0,expectedModelIndex=0)  # which extends Align.Param
+#param = Align.ParamOptimize()  # which extends Align.Param
 param.sift.maxOctaveSize = 512
+#param.ppm.sift.maxOctaveSize = 512
+#fixedLayers = HashSet()
+#for i in range(len(layerset.getLayers())):
+#    fixedLayers.add(layerset.getLayers().get(i))
+
+#emptyLayers = HashSet()
+
+#layerRange = layerset.getLayers(len(layerset.getLayers())-1,len(layerset.getLayers()))
+#layerRange = layerset.getLayers(len(layerset.getLayers())-2,len(layerset.getLayers())-1)
 #  ... above, adjust other parameters as necessary
 # See:
 #    features: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.Param.html
 #    transformation models: https://fiji.sc/javadoc/mpicbg/trakem2/align/Align.ParamOptimize.html
-#    sift: https://fiji.sc/javadoc/mpicbg/imagefeatures/FloatArray2DSIFT.Param.html
+#    sift: https://fiji.sc/javadoc/mpicbg/imagefeatures/FloatArray2DSIFT.Param.
+#print("hey")
+#print(layerRange)
+#print(param)
 AlignTask.montageLayers(param, layerset.getLayers(), False, False, False, False)
-
+#RegularizedAffineLayerAlignment().exec(
+#        param,
+#        layerRange,	
+#        fixedLayers,
+#        emptyLayers,
+#        layerset.get2DBounds(),
+#        False,
+#        False,
+#        None)
 # 5. Resize width and height of the world to fit the montages
 layerset.setMinimumDimensions()
 
