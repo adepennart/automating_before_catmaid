@@ -63,6 +63,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 #log("started purger thread")
 #purger_thread.scheduleWithFixedDelay(free, 0, RELEASE_EVERY, TimeUnit.SECONDS)
 #log("scheduled purge")
+#alignMultiLayerMosaicTask(layerset.getLayers(), Patch nail, Align.Param cp, Align.ParamOptimize p, Align.ParamOptimize pcp, False, False, False, False, False) 
 
 """
 
@@ -162,7 +163,7 @@ for num in range(0,len(OV_folder_list)):
 			gui.showDialog()
 			if gui.wasOKed():
 				if windows:
-					os.remove(sub_dir+"\\"+temp_proj_name+"test")
+					os.remove(sub_dir+"\\"+temp_proj_name+"test.xml")
 				if not windows:
 					os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
 			elif not gui.wasOKed():
@@ -264,7 +265,7 @@ for num in range(0,len(OV_folder_list)):
 		layerset = project.getRootLayerSet()
 		for layer in layerset.getLayers():
 		  	tiles = layer.getDisplayables(Patch)
-		  	remove_tiles(tiles)
+			remove_tiles(tiles)
 	filenames_keys=file_keys_big_list[num]
 	filenames_values=file_values_big_list[num]
 	print(filenames_keys, filenames_values)
@@ -302,17 +303,6 @@ for num in range(0,len(OV_folder_list)):
 	if len(filenames_keys) != 1:
 		layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0)
 		align_layers(model_index, octave_size, layerset)
-	
-	#alignMultiLayerMosaicTask(layerset.getLayers(), Patch nail, Align.Param cp, Align.ParamOptimize p, Align.ParamOptimize pcp, False, False, False, False, False) 
-	#align NO to OV
-#	for layer in layerset.getLayers():
-#	  	tiles = layer.getDisplayables(Patch) #get list of tiles
-#		layerset.setMinimumDimensions() #readjust canvas size
-#		tiles[0].setLocked(True) #lock the OV stack
-#	Align.alignLayersLinearly(layerset.getLayers(), numThreads, "0.tif")
-#	align_layers(model_index, octave_size, layerset,True)
-#	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
-	#	Saves the project with OV
 	#print(sub_dir, temp_proj_name+"aligned")
 	if proj_folds:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)

@@ -253,8 +253,8 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 		layerset.getLayer(i, 1, True)
 	for i,layer in enumerate(layerset.getLayers()):
 			for n, fold in enumerate(filenames_keys):
-				print(fold)
-				print(filenames_values[n][i])
+				#print(fold)
+				#print(filenames_values[n][i])
 				filepath = os.path.join(fold, filenames_values[n][i])
 				patch = Patch.createPatch(project, filepath)
 				layer.add(patch)
@@ -269,9 +269,9 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 	for i ,layer in enumerate(layerset.getLayers()):
 		if i >= start_lay:
 			for n, fold in enumerate(filenames_keys):
-				print(fold)
-				print(filenames_values[n][i-start_lay])
-				print(i+start_lay)
+				#print(fold)
+				#print(filenames_values[n][i-start_lay])
+				#print(i+start_lay)
 				filepath = os.path.join(fold, filenames_values[n][i-start_lay])
 				patch = Patch.createPatch(project, filepath)
 				layer.add(patch)
@@ -377,9 +377,41 @@ def overlap_area(ROI=None):
 			new_y_list.append(new_y)
 	else:
 		new_y_list=y_list	
+	for n, x in enumerate(new_x_list):
+		for x2 in new_x_list[n+1:]: 
+			if x2 < x:
+				print("this is unusual")
+	#basically have the file_sort functuin here
+	for  n, x in enumerate(new_x_list):
+		for m, x2 in enumerate(new_x_list[n+1:len(new_x_list)]):
+			try:
+				match = int(re.findall("(\d+)",str(x))[0])
+				match_2 = int(re.findall("(\d+)",str(x2))[0])
+			except IndexError:
+				print(" ERROR: Currently only works with filenames containing digits")
+				sys.exit("Currently only works with filenames containing digits")
+#			print(filename,filename_2)
+			if match > match_2:
+				temp_1=x
+				temp_2=x2
+#				print(filename,filename_2)
+				x=temp_2
+				x2=temp_1
+				new_x_list[n]=temp_2
+				new_x_list[n+m+1]=temp_1
+				y_temp=new_y_list[n]
+				new_y_list[n]=new_y_list[n+m+1]
+				new_y_list[n+m+1]=y_temp
+				width_temp=width_list[n]
+				width_list[n]=width_list[n+m+1]
+				width_list[n+m+1]=width_temp
+				height_temp = height_list[n]
+				height_list[n]=height_list[n+m+1]
+				height_list[n+m+1]=height_temp
+#				print(filename,filename_2)
+	
 	new_roi=[]
 	roi_list=[]
-	
 	for index in range(0,len(new_x_list)):
 		new_roi.append(new_x_list[index])
 		new_roi.append(new_y_list[index])
@@ -421,6 +453,7 @@ def overlap_area(ROI=None):
 	new_x=""
 	for n, x in enumerate(new_roi_list):
 		for x2 in new_roi_list[n+1:]:
+			print(x,x2)
 			if x[0]+x[2] > x2[0]:
 				new_x = [] + x
 				new_x[0] = x2[0] -x[0]
@@ -443,7 +476,8 @@ def overlap_area(ROI=None):
 			temp_overlap_list=[]
 		if not overlap_list:
 			print("ERROR: expecting overlap")
-			sys.exit("expecting overlap")		
+			sys.exit("expecting overlap")	
+	print("this is here")	
 	print(overlap_list, assoc_x_list)	
 	return overlap_list, assoc_x_list
 
@@ -488,9 +522,9 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 				print("cropper",cropper)
 				#print(imp.getDimensions())
 				#print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
-#				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
+				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
 #				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+100,crop_roi[n][3]);
-#				imp=imp.crop("stack")
+				imp=imp.crop("stack")
 				output_scaled=make_dir(joint_folder, "_"+str(n),imp, title, windows, True)
 				OV_file=filter(pattern_3.match, os.listdir(output_scaled))
 				OV_file=file_sort(OV_file)
