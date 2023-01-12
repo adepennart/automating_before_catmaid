@@ -91,7 +91,7 @@ sys.path.append(script_path)
 
 #could accept error and say to place functions.py in same folder as OV_overall
 
-from New_functions import *
+from functions import *
 # variables
 # --------------------------------------------------------------------------------------
 #vision group SBEM pattern
