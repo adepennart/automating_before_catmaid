@@ -1,7 +1,7 @@
 """
 Title: functions.py
 
-Date: December 22nd, 2022
+Date: January 12th, 2023
 
 Author: Auguste de Pennart
 
@@ -157,7 +157,7 @@ def folder_find(loop_fold=None,  is_windows=None, append_fold=None):
 			filename = loop_fold+"\\"+filename
 		elif not is_windows:
 			filename = loop_fold+"/"+filename
-	#	print(filename)
+#		print(filename)
 		if os.path.isdir(filename):
 	#		print("found folder")
 			all_folder_list.append(filename)	
@@ -280,36 +280,107 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 	return layerset
 
 def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None):
-	non_move=None
+	non_move=[]
 	roi=None
 	roi_list=[]
+	tile_list=[]
 	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
 	param.sift.maxOctaveSize = octave_size
-	for layer in layerset.getLayers():
+	for n, layer in enumerate(layerset.getLayers()):
 	  	tiles = layer.getDisplayables(Patch) #get list of tiles
+		tile_list.append(tiles[0])
 		layerset.setMinimumDimensions() #readjust canvas size
 		if not OV_lock:	
+			if n == 0:
+				old_tiles=tiles
+			if n > 0:
+#				old_tiles[1].link(tiles[1])
+				for n, old_tile in enumerate(old_tiles):
+					for m, tile in enumerate(tiles):
+#				for num in range(0,len(tiles)):
+#					print(num)
+#					old_tiles[num].link(tiles[num])
+						if n == m:
+							old_tile.link(tile)
+							break
+					old_tiles=tiles
+					print(tile.isLinked())
 			tiles[0].setLocked(True) #lock the OV stack
-			non_move = [tiles[0]] #i believe tihs is what they are looking for
+			non_move.append(tiles[0]) #i believe tihs is what they are looking for
+#		AlignTask.montageLayers(
+#		param,
+#		layerset.getLayers(),
+#		False , 
+#		False, 
+#		False, 
+#		False)	
 		#montage or align?
-		AlignTask.alignPatches(
-		param,
-		tiles,
-		non_move,
-		False,
-		False,
-		False,
-		False)
-		if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-			#will become list
-			for tile in tiles[0:]:
-				roi = tile.getBoundingBox() #needed in OV alignment
-				roi_list.append(roi)
-			roi=roi_list
-		if not OV_lock: 
-			roi = tiles[1].getBoundingBox() #needed in OV alignment
-			for tile in tiles[1:]:
-				roi.add(tile.getBoundingBox())
+	for n, layer in enumerate(layerset.getLayers()):
+#		if n ==0:
+	# 		layer=Layerset.getLayer(0)
+		  	tiles = layer.getDisplayables(Patch) #get list of tiles
+	#	  	if not OV_lock:	
+	#	  		non_move = [tiles[0]] #i believe tihs is what they are looking for
+	#		Align.connectTilePairs(param, 
+	#		tiles, 
+	#		tiles,
+	#		1)
+#			tiles = layer.getDisplayables(Patch) #get list of tiles
+#			for tile in tiles[1:]:
+#				roi = tile.getBoundingBox() #needed in OV alignment
+#				roi_list.append(r)
+			#check
+			AlignTask.alignPatches(
+			param,
+			tiles,
+			[tiles[0]],#non_move,
+			False,
+			False,
+			False,
+			False)
+#			tiles = layer.getDisplayables(Patch) #get list of tiles
+#			for tile in tiles[1:]:
+#				new_roi = tile.getBoundingBox() #needed in OV alignment
+##				new_roi_list.append(r)
+#			x_dif = new_roi.x-roi.x	
+#			y_dif =  new_roi.y-roi.y
+			#from ini.trakem2.display import Displayable
+	#		tiles.getBoundingBox()
+	#		tile 1 needs to be changed to incorprate al
+			#check if better linked
+	#	AlignTask.alignPatches(param,tile_list, None, False, False,False,False) 
+	#	for layer in layerset.getLayers():
+			if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
+				#will become list
+#				tiles[1].unlink()
+#				for num in range(0,len(tiles)):
+#					tiles[num].unlink()
+#				tiles[0].link(tiles[1])
+#				for num in range(1,len(tiles)):
+#					tiles[0].link(tiles[num])
+				for n, tile in enumerate(tiles[:-2]):
+					for m, tile_2 in enumerate(tiles[n:]):
+						tile.link(tile_2)	
+				for tile in tiles[0:]:
+					roi = tile.getBoundingBox() #needed in OV alignment
+					roi_list.append(roi)
+				roi=roi_list
+			if not OV_lock: 
+				roi = tiles[1].getBoundingBox() #needed in OV alignment
+				for tile in tiles[1:]:
+					roi.add(tile.getBoundingBox())
+#		else:
+#			print(x_dif,y_dif)
+#			tiles=layer.getDisplayables(Patch)
+#			for tile in tiles[1:]:
+#				tile.translate(x_dif,y_dif)
+##		AlignTask.montageLayers(
+#		param,
+#		layerset.getLayers(),
+#		False , 
+#		False, 
+#		False, 
+#		False)	
 	return roi, tiles
 
 #def find_crop_area(filenames_keys=None, filenames_values=None, project=None, test_folder=None, proj_folder=None, windows=None, project_name=None, model_index=None, octave_size=None, invert_image=False,size=None): #layerset=None, pattern_3=None

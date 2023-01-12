@@ -1,7 +1,7 @@
 """
-Title: OV_overall.py
+Title: low_res.py
 
-Date: December 22nd, 2022
+Date: January 11th, 2023
 
 Author: Auguste de Pennart
 
@@ -39,6 +39,7 @@ known error:
    	19. pulled out aligned porject not test
    	20. test whether the trakem2 folders are in the right parent folders
    	22. you need two terabytes to run this script (3-4 times the space it currently takes)
+   	23. fix the fact that is calls the files duplicate...
    	
     
 loosely based off of Albert Cardona 2011-06-05 script
@@ -67,6 +68,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 
 """
 
+
 #@ File (label = "OV directory", style = "directory") folder
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
@@ -89,7 +91,7 @@ sys.path.append(script_path)
 
 #could accept error and say to place functions.py in same folder as OV_overall
 
-from functions import *
+from New_functions import *
 # variables
 # --------------------------------------------------------------------------------------
 #vision group SBEM pattern
@@ -140,6 +142,7 @@ output_dir = output_dir.getAbsolutePath()
 #make folders
 grand_joint_folder=mut_fold(folder,output_dir,windows)
 OV_folder_list=folder_find(folder,windows)
+OV_folder_list=file_sort(OV_folder_list, -1) #needed
 if test:
 	test_dir= make_dir(grand_joint_folder,  "test_0_"+project_name)
 proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name)
@@ -151,7 +154,7 @@ for num in range(0,len(OV_folder_list)):
 	sub_OV_folders=folder_find(OV_folder_list[num], windows)
 #	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_2)
 	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_3)
-#	print(filenames_keys, filenames_values)
+	print(filenames_keys, filenames_values)
 	if test:
 		sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
 		file_list= os.listdir(sub_dir)
@@ -190,6 +193,7 @@ for num in range(0,len(OV_folder_list)):
 			#not sure if needed
 			assoc_roi_list.append(roi)
 		roi_list.append(roi)
+		#spaghetti code
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)							
 		tiles_list.append(tiles)
 		#fix for windows
@@ -231,7 +235,7 @@ try:
 	project_list[1]
 except IndexError:
 	proj_folds=folder_find(proj_dir,windows) #add function functionality to send gui if you want to make a new folder
-	#print(proj_folds)
+	print(proj_folds)
 	projects=Project.getProjects()
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
@@ -264,7 +268,7 @@ for num in range(0,len(OV_folder_list)):
 		#print(project)
 		layerset = project.getRootLayerSet()
 		for layer in layerset.getLayers():
-		  	tiles = layer.getDisplayables(Patch)
+			tiles = layer.getDisplayables(Patch)
 			remove_tiles(tiles)
 	filenames_keys=file_keys_big_list[num]
 	filenames_values=file_values_big_list[num]
@@ -273,7 +277,7 @@ for num in range(0,len(OV_folder_list)):
 		if inverted_image:
 			#make list of filenammes keys and values for each project
 			#print(roi_list, crop_roi_list)
-			output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num))
+ 			output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num))
 			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3,0)
 			if len(filenames_keys) != 1:
 				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_"+project_name)
@@ -294,25 +298,28 @@ for num in range(0,len(OV_folder_list)):
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
 	print(filenames_keys, filenames_values)
 	#print([filenames_keys[0]], filenames_values[0])										
+	#spaghetti code
 	filenames_keys=file_sort(filenames_keys,0,True)
 	filenames_values=file_sort(filenames_values,0,True)
 	print(filenames_keys, filenames_values)
-	#add stack to trakem2
 	layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0]))
-	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
+	#don't need this if
 	if len(filenames_keys) != 1:
 		layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0)
 		align_layers(model_index, octave_size, layerset)
+		#could change number of threads
+	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
+	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
 	#print(sub_dir, temp_proj_name+"aligned")
+	#probs don't need if
 	if proj_folds:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	else:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	#removes the OV tile
 	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
+	#remove OV from layers
 	#exports images
 	mini_dir= make_dir(output_dir,  "export_"+str(num))
-	export_image(layerset, mini_dir)#, canvas_roi=False, processed=False)
-	export_image(layerset, mini_dir, canvas_roi=True)#, canvas_roi=False, processed=False)
-
+	export_image(layerset, mini_dir, canvas_roi=True)#, processed=False)
 print("Done!")
