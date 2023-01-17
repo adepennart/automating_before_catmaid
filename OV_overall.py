@@ -40,6 +40,7 @@ known error:
    	20. test whether the trakem2 folders are in the right parent folders
    	22. you need two terabytes to run this script (3-4 times the space it currently takes)
    	23. fix the fact that is calls the files duplicate...
+   	24. when not inverted images will be in the crop interim folder and OV folder
    	
     
 loosely based off of Albert Cardona 2011-06-05 script
@@ -287,6 +288,17 @@ for num in range(0,len(OV_folder_list)):
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
+				#should be made into funciton
+				inverted_subs=folder_find(output_inverted,windows)
+				match = int(re.findall("(\d+)",str(inverted_subs[-1]))[-1])
+				if windows:
+					incrop=output_scaled+"\\_"+str(match)
+					os.rename(inverted_subs[-1],incrop)
+					filenames_keys[-1]=incrop
+				elif not windows:
+					incrop=output_scaled+"/_"+str(match)
+					os.rename(inverted_subs[-1], incrop)
+					filenames_keys[-1]=incrop
 		#crop image
 		elif not inverted_image:
 			if len(filenames_keys) != 1:
@@ -297,6 +309,14 @@ for num in range(0,len(OV_folder_list)):
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
 	print(filenames_keys, filenames_values)
+for num in range(0,len(OV_folder_list)):
+	temp_proj_name=project_name+"_"+str(num)
+	#print((project_list[num]))
+	#print(type(project_list[num]))
+#	print(match[0])
+	project = Project.getProject(project_list[num])
+	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
+	#print(project)
 	#print([filenames_keys[0]], filenames_values[0])										
 	#spaghetti code
 	filenames_keys=file_sort(filenames_keys,0,True)
@@ -309,15 +329,16 @@ for num in range(0,len(OV_folder_list)):
 		align_layers(model_index, octave_size, layerset)
 		#could change number of threads
 	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
+	project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False)
 	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None)
 	#print(sub_dir, temp_proj_name+"aligned")
 	#probs don't need if
+	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
 	if proj_folds:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	else:
 		project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
 	#removes the OV tile
-	layerset.setMinimumDimensions() #readjust canvas to only NO tiles
 	#remove OV from layers
 	#exports images
 	mini_dir= make_dir(output_dir,  "export_"+str(num))
