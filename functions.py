@@ -37,6 +37,7 @@ known error:
     8. should open project, if already opened
     9. have time stamps
     10.not cropped currently if not resizing
+    11. deactivate mipmaps
   
     
 loosely based off of Albert Cardona 2011-06-05 script
@@ -67,6 +68,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 # import modules
 # ----------------------------------------------------------------------------------------
 import os, re, sys
+import shutil
 from ij import IJ, ImagePlus, plugin
 from ini.trakem2 import Project
 from ini.trakem2.display import Display, Patch
@@ -82,12 +84,16 @@ from mpicbg.ij.clahe import FastFlat, Flat
 #https://mirror.imagej.net/developer/api/ij/gui/
 from ij.gui import GenericDialog
 from ij.gui import GUI
-#could be useful for threads
+#could be useful for threads/ flushing image cache
 from java.lang import Runtime
-from java.util.concurrent import Executors
+from java.util.concurrent import Executors, TimeUnit
 
 #align
 from ini.trakem2.utils import Filter
+
+# func: flushing image cache
+def releaseAll():
+	Project.getProjects()[0].getLoader().releaseAll()
 
 #func: finds mutual folder between both input folders
 def mut_fold(folder_1=None,folder_2=None,is_windows=None):
@@ -240,7 +246,7 @@ def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 			imp=IJ.openImage(filepath);
 			IJ.run(imp, "Invert", "");
 			sub_dir=make_dir(joint_folder, "_"+str(n), imp, "/"+str(m),windows, True)
-			print(sub_dir)
+#			print(sub_dir)
 			NO_file=filter(pattern_3.match, os.listdir(sub_dir))
 			NO_file=file_sort(NO_file)
 			filenames_keys[n+file_start] = sub_dir
@@ -253,8 +259,8 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 		layerset.getLayer(i, 1, True)
 	for i,layer in enumerate(layerset.getLayers()):
 			for n, fold in enumerate(filenames_keys):
-				#print(fold)
-				#print(filenames_values[n][i])
+				print(fold)
+				print(filenames_values[n][i])
 				filepath = os.path.join(fold, filenames_values[n][i])
 				patch = Patch.createPatch(project, filepath)
 				layer.add(patch)
@@ -284,8 +290,31 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 	roi=None
 	roi_list=[]
 	tile_list=[]
-	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
+#	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index, maxEpsilon=25,minInlierRatio=0.05,minNumInliers=7)  # which extends Align.Param
+	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index, maxEpsilon=25,minInlierRatio=0.05,minNumInliers=7)  # which extends Align.Param
 	param.sift.maxOctaveSize = octave_size
+	param.sift.minOctaveSize = octave_size/2
+	param.sift.steps = 3
+	param.sift.fdBins = 8
+	param.sift.fdSize = 4
+	#block matching
+	#patch scale 0.2
+	#search radius 90 pixel
+	#block radius default 50
+	#correlation filters 
+	#minimal PMCC r 0.1
+	#maximal curvature ratio 1000 i think 10.00
+	#maximual second best 0.90
+	#local smoothness filters
+	#approximate local transformation affine
+	#sigma default 25.00 ?
+	#absolute maximal loca ldispalcementL 30
+	#relative maximal local displacememt 3
+	#select tiles are premontaged
+	#spring mesh= default
+	#sift based proemontage
+	#feature descriptin defautl
+	
 	for n, layer in enumerate(layerset.getLayers()):
 	  	tiles = layer.getDisplayables(Patch) #get list of tiles
 		tile_list.append(tiles[0])
@@ -304,7 +333,7 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 							old_tile.link(tile)
 							break
 					old_tiles=tiles
-					print(tile.isLinked())
+					#print(tile.isLinked())
 			tiles[0].setLocked(True) #lock the OV stack
 			non_move.append(tiles[0]) #i believe tihs is what they are looking for
 #		AlignTask.montageLayers(
@@ -428,7 +457,7 @@ def overlap_area(ROI=None):
 		y_list.append(r.y)
 		width_list.append(r.width)
 		height_list.append(r.height)
-	#print(x_list,y_list,width_list, height_list)
+	print(x_list,y_list,width_list, height_list)
 	for x in x_list:
 		if x < match_x:
 			match_x = 0 + x
@@ -450,8 +479,11 @@ def overlap_area(ROI=None):
 		new_y_list=y_list	
 	for n, x in enumerate(new_x_list):
 		for x2 in new_x_list[n+1:]: 
+			print("here i am")
+			print(x,x2)
 			if x2 < x:
 				print("this is unusual")
+				new_x_list=file_sort(new_x_list, -1) #needed
 	#basically have the file_sort functuin here
 	for  n, x in enumerate(new_x_list):
 		for m, x2 in enumerate(new_x_list[n+1:len(new_x_list)]):
@@ -524,7 +556,7 @@ def overlap_area(ROI=None):
 	new_x=""
 	for n, x in enumerate(new_roi_list):
 		for x2 in new_roi_list[n+1:]:
-			print(x,x2)
+			#print(x,x2)
 			if x[0]+x[2] > x2[0]:
 				new_x = [] + x
 				new_x[0] = x2[0] -x[0]
@@ -536,20 +568,21 @@ def overlap_area(ROI=None):
 			print("ERROR: 3 of your images are overlapping, currently cannot accomodate")
 			sys.exit("3 of your images are overlapping, currently cannot accomodate")	
 		elif  len(temp_overlap_list) == 1:
+			#this is to make the crop area
 			overlap_list.append(temp_overlap_list[0])
 			#assuming image to left
 #			assoc_x_list.append(x)
 			for m, link in enumerate(x_list):
 				#print(link-match_x, x[0])
 				if link-match_x == x[0]:
-					print(link-match_x, x[0])
+					#print(link-match_x, x[0])
 					assoc_x_list.append([link,y_list[m],width_list[m],height_list[m]])
 			temp_overlap_list=[]
 		if not overlap_list:
 			print("ERROR: expecting overlap")
 			sys.exit("expecting overlap")	
-	print("this is here")	
-	print(overlap_list, assoc_x_list)	
+	#print("this is here")	
+	#print(overlap_list, assoc_x_list)	
 	return overlap_list, assoc_x_list
 
 def remove_tiles(tiles=None):
@@ -561,14 +594,14 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual");
 	title=imp.getTitle()
 	ROI=imp.setRoi(roi.x-10,roi.y-10,roi.width+10,roi.height+10);
-	print(imp.getDimensions())
+	#print(imp.getDimensions())
 	imp=imp.crop("stack")
 	old_dim=imp.getDimensions()
 	width=imp.getDimensions()[0]*size
 	height=imp.getDimensions()[1]*size
 	#resize images
 	imp = imp.resize(width, height, "none");
-	print(old_dim, imp.getDimensions())
+	#print(old_dim, imp.getDimensions())
 	#multiple files
 	#mac or windows
 	Title=imp.setTitle("")
@@ -580,7 +613,10 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	return filenames_keys, filenames_values
 	
 def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern_3=None, roi=None, crop_roi=None, assoc_roi=None): #layerset=None, project=None
-	print("in")
+	roi_copy = roi[:]
+	filenames_keys_copy = filenames_keys[:]
+	numbered = list(range(0,len(roi)))
+	print(filenames_keys,roi_copy, numbered)
 	for m, r in enumerate(roi):
 		for n, assoc_r in enumerate(assoc_roi):
 			#print(r,assoc_r)
@@ -590,17 +626,60 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual");
 				title=imp.getTitle()
 				cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0]))
-				print("cropper",cropper)
+				#print("cropper",cropper)
 				#print(imp.getDimensions())
 				#print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
 				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3]);
 #				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+100,crop_roi[n][3]);
 				imp=imp.crop("stack")
-				output_scaled=make_dir(joint_folder, "_"+str(n),imp, title, windows, True)
+				#this way name does not change between folders, if the order of the folders is not the order of the overlay
+				output_scaled=make_dir(joint_folder, "_"+str(m),imp, title, windows, True)
 				OV_file=filter(pattern_3.match, os.listdir(output_scaled))
 				OV_file=file_sort(OV_file)
+				roi_copy.remove(r)
+				#print(filenames_keys[m])
+				filenames_keys_copy.remove(filenames_keys[m])
+				numbered.remove(m)
+				print(numbered)
 				filenames_keys[m] = output_scaled
 				filenames_values[m] = OV_file
+			#have to make a complimentary function, where when all roi are found remove, the none found one gets added to the crop directory
+	#should be made into funciton
+	
+	#inverted_subs=folder_find(output_inverted,windows)
+	print(filenames_keys_copy)
+	match = int(re.findall("(\d+)",str(filenames_keys_copy))[-1])
+#	match=len(filenames_keys)
+	#print(inverted_subs)
+	#print(match)
+	if windows:
+		incrop=joint_folder+"/_"+str(match)
+		try:
+			dest = shutil.move(filenames_keys_copy[0], joint_folder)
+		except shutil.Error:
+			pass
+		#print(filenames_keys)
+		#print(numbered,"here")
+		filenames_keys[numbered[0]]=incrop
+		#print(incrop)
+		#print(filenames_keys)
+	elif not windows:
+		incrop=joint_folder+"/_"+str(match)
+#		incrop=output_scaled+"/_"+str(match)
+		#print(incrop)
+		#print(inverted_subs[-1])
+		try:
+			dest = shutil.move(filenames_keys_copy[0], joint_folder)
+#			dest = shutil.move(inverted_subs[-1], output_scaled)
+		#if this folder already exists, should ask for overwrite
+		except shutil.Error:
+			pass
+			#os.rename(inverted_subs[-1], output_scaled)
+		print(filenames_keys)
+		print(numbered,"here")
+		filenames_keys[numbered[0]]=incrop
+		#print(incrop)
+		#print(filenames_keys)
 	return filenames_keys, filenames_values	
 	
 #removes the OV tile

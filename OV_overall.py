@@ -15,7 +15,6 @@ List of "non standard modules"
 	module functions.py used for this script
 
 Procedure:
-
 	1. runs test if specificed to find best balues for montaging
 	2. when alignment successful, creates interim interim folder if inverted specificed 
 	3. creates cropped image interim folder for best quality final results
@@ -41,9 +40,13 @@ known error:
    	22. you need two terabytes to run this script (3-4 times the space it currently takes)
    	23. fix the fact that is calls the files duplicate...
    	24. when not inverted images will be in the crop interim folder and OV folder
+ 	25. elastic alignment could be a useful feature
+   	26. as well as clahe on the alignemt, supposedly alignment runs better
+   	27. montaging should stay as translation, however minor adjustments should be made to increase speed
+   	28. if left and right tile are inverted in order than than they should needs to be able to deal with it
    	
     
-loosely based off of Albert Cardona 2011-06-05 script
+based off of Albert Cardona 2011-06-05 script
 
 #useful links
 #upload to catmaid
@@ -83,7 +86,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 # ----------------------------------------------------------------------------------------
 #might not need all these modules
 import os, re, sys
-
+import shutil
 #print(os.path.realpath(__file__))
 #script_path=os.path.realpath(__file__)
 #script_path=os.path.abspath(__file__)
@@ -93,6 +96,7 @@ sys.path.append(script_path)
 #could accept error and say to place functions.py in same folder as OV_overall
 
 from functions import *
+
 # variables
 # --------------------------------------------------------------------------------------
 #vision group SBEM pattern
@@ -137,6 +141,9 @@ elif model_index == "affine":
 folder = folder.getAbsolutePath()
 output_dir = output_dir.getAbsolutePath()
 
+#flush image cache every 60 seconds?
+exe = Executors.newSingleThreadScheduledExecutor()
+exe.scheduleAtFixedRate(releaseAll, 0, 60, TimeUnit.SECONDS)
 
 #main
 # --------------------------------------------------------------------------------------
@@ -153,9 +160,11 @@ if inverted_image:
 for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
 	sub_OV_folders=folder_find(OV_folder_list[num], windows)
+	sub_OV_folders=file_sort(sub_OV_folders, -1) #needed
 #	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_2)
 	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_3)
-	print(filenames_keys, filenames_values)
+	print("folder and its content registered")
+#	print(filenames_keys, filenames_values)
 	if test:
 		sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))
 		file_list= os.listdir(sub_dir)
@@ -173,7 +182,8 @@ for num in range(0,len(OV_folder_list)):
 			elif not gui.wasOKed():
 				sys.exit()
 		project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
-		project.adjustProperties() #adjust properties window
+		#not needed as we are going to avoid using mipmap to reduce storage space
+		#project.adjustProperties() #adjust properties window
 		layerset = project.getRootLayerSet() #creates initial collection of layers variable
 		#also should crop too
 		temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys, 
@@ -183,10 +193,10 @@ for num in range(0,len(OV_folder_list)):
 		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
 		roi, tiles =align_layers(model_index, octave_size, layerset,True)
 		layerset.setMinimumDimensions() #readjust canvas to only NO tiles
-		#print(roi)
+		print(roi, tiles)
 		if len(filenames_keys) != 1: 
 			new_roi, assoc_roi =overlap_area(roi)
-		#	print(new_roi)
+			print(new_roi, assoc_roi, roi)
 			crop_roi_list.append(new_roi)
 			assoc_roi_list.append(assoc_roi)
 		else:
@@ -210,7 +220,8 @@ for num in range(0,len(OV_folder_list)):
 if test:	
 	while 1: 
 		gui = GUI.newNonBlockingDialog("Aligned?")
-		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
+		gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
+#		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 		gui.showDialog()
 		if gui.wasOKed():
 			break
@@ -222,7 +233,7 @@ if test:
 				roi, tiles =align_layers(model_index, octave_size, layerset)
 				if len(filenames_keys) != 1: 
 					new_roi, assoc_roi =overlap_area(roi)
-					print(new_roi)
+					#print(new_roi)
 					crop_roi_list.append(new_roi)
 					assoc_roi_list.append(assoc_roi)
 				else:
@@ -236,7 +247,8 @@ try:
 	project_list[1]
 except IndexError:
 	proj_folds=folder_find(proj_dir,windows) #add function functionality to send gui if you want to make a new folder
-	print(proj_folds)
+	proj_folds=file_sort(proj_folds, -1) #needed
+	#print(proj_folds)
 	projects=Project.getProjects()
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
@@ -252,7 +264,7 @@ except IndexError:
 			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
 		project=''
-project_list=file_sort(project_list)
+#project_list=file_sort(project_list)
 #print(project_list)
 #inverts image
 for num in range(0,len(OV_folder_list)):
@@ -273,6 +285,7 @@ for num in range(0,len(OV_folder_list)):
 			remove_tiles(tiles)
 	filenames_keys=file_keys_big_list[num]
 	filenames_values=file_values_big_list[num]
+	print("this is before cropped")
 	print(filenames_keys, filenames_values)
 	if test:
 		if inverted_image:
@@ -283,23 +296,33 @@ for num in range(0,len(OV_folder_list)):
 			if len(filenames_keys) != 1:
 				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_"+project_name)
 				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
-				#print(output_scaled, roi_list[num], crop_roi_list[num])
+				print(output_scaled, roi_list[num], crop_roi_list[num],assoc_roi_list[num])
 				filenames_keys, filenames_values = remove_area(filenames_keys, 
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
 				#should be made into funciton
-				inverted_subs=folder_find(output_inverted,windows)
-				match = int(re.findall("(\d+)",str(inverted_subs[-1]))[-1])
-				if windows:
-					incrop=output_scaled+"\\_"+str(match)
-					os.rename(inverted_subs[-1],incrop)
-					filenames_keys[-1]=incrop
-				elif not windows:
-					incrop=output_scaled+"/_"+str(match)
-					os.rename(inverted_subs[-1], incrop)
-					filenames_keys[-1]=incrop
-		#crop image
+#				inverted_subs=folder_find(output_inverted,windows)
+#				match = int(re.findall("(\d+)",str(inverted_subs[-1]))[-1])
+#				#print(inverted_subs)
+#				#print(match)
+#				if windows:
+#					incrop=output_scaled+"\\_"+str(match)
+#					os.rename(inverted_subs[-1],incrop)
+#					filenames_keys[-1]=incrop
+#				elif not windows:
+#					incrop=output_scaled+"/_"+str(match)
+#					#print(incrop)
+#					#print(inverted_subs[-1])
+#					try:
+#						dest = shutil.move(inverted_subs[-1], output_scaled)
+#					except shutil.Error:
+#						pass
+#						#os.rename(inverted_subs[-1], output_scaled)
+#					filenames_keys[-1]=incrop
+#					#print(incrop)
+#					#print(filenames_keys)
+#		#crop image
 		elif not inverted_image:
 			if len(filenames_keys) != 1:
 				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_"+project_name)
@@ -308,7 +331,12 @@ for num in range(0,len(OV_folder_list)):
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
-	print(filenames_keys, filenames_values)
+				
+	print("files potentially cropped and or inverted")
+#	print(filenames_keys, filenames_values)
+	file_keys_big_list[num]=filenames_keys
+	file_values_big_list[num]=filenames_values
+	
 for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
 	#print((project_list[num]))
@@ -319,12 +347,16 @@ for num in range(0,len(OV_folder_list)):
 	#print(project)
 	#print([filenames_keys[0]], filenames_values[0])										
 	#spaghetti code
+	filenames_keys=file_keys_big_list[num]
+	filenames_values=file_values_big_list[num]
 	filenames_keys=file_sort(filenames_keys,0,True)
 	filenames_values=file_sort(filenames_values,0,True)
 	print(filenames_keys, filenames_values)
+	print("prepared tile order for best overlay")
 	layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0]))
 	#don't need this if
 	if len(filenames_keys) != 1:
+	#issue here where there is a project loaded with the same name
 		layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0)
 		align_layers(model_index, octave_size, layerset)
 		#could change number of threads
