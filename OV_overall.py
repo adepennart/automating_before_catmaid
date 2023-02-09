@@ -293,7 +293,7 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 	layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0])) #makes layers and adds images to them
 	if len(filenames_keys) != 1: #don't need this if
 		layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0) #issue here where there is a project loaded with the same name
-		align_layers(model_index, octave_size, layerset) #could change number of threads
+		align_layers(model_index, octave_size, layerset, True) #could change number of threads
 	layerset.setMinimumDimensions() 
 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment
 	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment

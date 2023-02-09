@@ -470,12 +470,16 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 	roi=None
 	roi_list=[]
 	#various parameters for alignment
-	param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index, maxEpsilon=25,minInlierRatio=0.05,minNumInliers=7)  # which extends Align.Param
-	param.sift.maxOctaveSize = octave_size
-	param.sift.minOctaveSize = octave_size/2
-	param.sift.steps = 3
-	param.sift.fdBins = 8
-	param.sift.fdSize = 4
+	if OV_lock:
+		param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index, maxEpsilon=25,minInlierRatio=0.05,minNumInliers=7)  # which extends Align.Param
+		param.sift.maxOctaveSize = octave_size
+		param.sift.minOctaveSize = octave_size/2
+		param.sift.steps = 3
+		param.sift.fdBins = 8
+		param.sift.fdSize = 4
+	if not OV_lock:
+		param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
+		param.sift.maxOctaveSize = octave_size
 	for n, layer in enumerate(layerset.getLayers()):
 	  	tiles = layer.getDisplayables(Patch) #get all tiles
 		layerset.setMinimumDimensions() #readjust canvas size
@@ -502,14 +506,14 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 			False,
 			False,
 			False)
-#			if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-#				for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
-#					for m, tile_2 in enumerate(tiles[n:]):
-#						tile.link(tile_2)	
-#				for tile in tiles[0:]: #roi for each stack of images is collected
-#					roi = tile.getBoundingBox() #needed in OV alignment
-#					roi_list.append(roi)
-#				roi=roi_list
+			if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
+				for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
+					for m, tile_2 in enumerate(tiles[n:]):
+						tile.link(tile_2)	
+				for tile in tiles[0:]: #roi for each stack of images is collected
+					roi = tile.getBoundingBox() #needed in OV alignment
+					roi_list.append(roi)
+				roi=roi_list
 			if not OV_lock: #roi for each stack of images is collected
 				roi = tiles[1].getBoundingBox() #needed in OV alignment
 				for tile in tiles[1:]:
