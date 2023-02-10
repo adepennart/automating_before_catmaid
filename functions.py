@@ -507,9 +507,9 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 			False,
 			False)
 			if OV_lock: #could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-				for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
-					for m, tile_2 in enumerate(tiles[n:]):
-						tile.link(tile_2)	
+				# for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
+				# 	for m, tile_2 in enumerate(tiles[n:]):
+				# 		tile.link(tile_2)	
 				for tile in tiles[0:]: #roi for each stack of images is collected
 					roi = tile.getBoundingBox() #needed in OV alignment
 					roi_list.append(roi)
@@ -630,7 +630,7 @@ def overlap_area(ROI=None):
 	#nothing in place for y
 	for n, y in enumerate(y_list): # this step is in place to state function handles only horizontal alignments for now
 		for y2 in y_list[n+1:]:
-			if abs(abs(y) - abs(y)) > 15:
+			if abs(abs(y) - abs(y2)) > 100:
 				big_dif=True
 	if big_dif:
 		gui = GUI.newNonBlockingDialog("Y_axis_overlap?")
@@ -753,7 +753,8 @@ def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, w
 				#print(r,assoc_r)
 				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual");
 				title=imp.getTitle()
-				cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0])) # adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
+				# cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0])) # adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
+				cropper=int(float(0.4)*float(crop_roi[n][2])) # adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
 				#print("cropper",cropper)
 				#print(imp.getDimensions())
 				#print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
