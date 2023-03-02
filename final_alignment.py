@@ -29,7 +29,7 @@ known error:
 based off of Albert Cardona 2011-06-05 script
 """
 
-#@ File (label = "OV directory", style = "directory") folder
+#@ File (label = "directory", style = "directory") folder
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
