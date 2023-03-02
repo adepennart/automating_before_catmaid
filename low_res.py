@@ -53,7 +53,7 @@ known error:
     
 based off of Albert Cardona 2011-06-05 script
 """
-#@ File (label = "OV directory", style = "directory") folder
+#@ File (label = "Input directory", style = "directory") folder
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ boolean (label = "Invert images") inverted_image

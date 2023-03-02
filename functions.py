@@ -707,7 +707,7 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	#resize images
 	imp = imp.resize(width, height, "none"); #resize image to changed image dimensions
 	Title=imp.setTitle("") #create new image stack name
-	output_scaled=make_dir(joint_folder, "_",imp, title, windows, True) #save to specified directory
+	output_scaled=make_dir(joint_folder, "_0",imp, title, windows, True) #save to specified directory
 	OV_file=filter(pattern.match, os.listdir(output_scaled)) #find new saved files
 	OV_file=file_sort(OV_file) #sort in ascending order
 	filenames_keys[0] = output_scaled #save new filepath and images to filenames_keys and filenames_values

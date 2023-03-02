@@ -157,8 +157,8 @@ for num in range(0,len(OV_folder_list)):
 		dup_find(filenames_keys,filenames_values)
 		#Creates a TrakEM2 project
 		sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #make substack specific project folder
-		file_list= os.listdir(sub_dir)
-		if temp_proj_name+"test.xml" in file_list:
+		file_list= os.listdir(sub_dir) # get list of all images in substack
+		if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
 			gui = GUI.newNonBlockingDialog("Overwrite?")
 			gui.addMessage(" Press ok to overwrite project file?")
 			gui.showDialog()
@@ -169,9 +169,9 @@ for num in range(0,len(OV_folder_list)):
 					os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
 			elif not gui.wasOKed():
 				sys.exit()
-		project = Project.newFSProject("blank", None, sub_dir)
+		project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
 		#creates initial collection of layers variable
-		layerset = project.getRootLayerSet()
+		layerset = project.getRootLayerSet() #creates initial collection of layers variable
 		#create cropped area 
 		temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys[1:], 
 																	filenames_values[1:], 
@@ -180,8 +180,8 @@ for num in range(0,len(OV_folder_list)):
 		temp_filenames_keys = [filenames_keys[0]]+temp_filenames_keys
 		temp_filenames_values =	[filenames_values[0]]+temp_filenames_values									
 		# print(temp_filenames_keys, temp_filenames_values)
-		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)
-		roi, tiles =align_layers(model_index, octave_size, layerset)
+		layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1) #creates layerset and adds images
+		roi, tiles =align_layers(model_index, octave_size, layerset)  #aligns images
 		project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
 		layerset.setMinimumDimensions() #readjust canvas to only NO tiles
 		tiles_list.append(tiles)
@@ -194,7 +194,7 @@ for num in range(0,len(OV_folder_list)):
 if test:	
 	#find max ROI
 	#potential gui
-	while 1: 
+	while 1: #increases maximum image size parameters by 200 if the images did not align
 		gui = GUI.newNonBlockingDialog("Aligned?")
 		gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
 		gui.showDialog()
@@ -216,10 +216,10 @@ if test:
 	max_roi=max(roi_list)
 	print(max_roi)
 
-try:
+try: #if not running test opens up previous test project file, clunky way deciding between test mode or not
 	project_list[1]
 except IndexError:
-	proj_folds=folder_find(proj_dir,windows)
+	proj_folds=folder_find(proj_dir,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
 	print(proj_folds)
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
