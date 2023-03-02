@@ -478,7 +478,10 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 		param.sift.fdBins = 8
 		param.sift.fdSize = 4
 	if not OV_lock:
-		param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
+		if model_index > 1:
+			param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index-1,correspondenceWeight=0.3)  # which extends Align.Param
+		else:
+			param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index)  # which extends Align.Param
 		param.sift.maxOctaveSize = octave_size
 	for n, layer in enumerate(layerset.getLayers()):
 	  	tiles = layer.getDisplayables(Patch) #get all tiles
