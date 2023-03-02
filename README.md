@@ -1,3 +1,4 @@
+# automating_catmaid
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
@@ -46,9 +47,9 @@ PROJECT NAME, chosen name for your Trackem2 project.
 
 INVERT IMAGES, specify whether you would like your images inverted.
         
-OCTAVE SIZE, maximum image size(px). Default should be 1000.
+OCTAVE_SIZE, maximum image size(px). Default should be 1000.
 
-MODEL INDEX, choice of alignment between translation, rigid, similarity and affine.
+MODEL_INDEX, choice of alignment between translation, rigid, similarity and affine.
 
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
@@ -56,24 +57,25 @@ RUN TEST(IF OV HAS NOT BEEN INVERTED) specify whether you would like to run a te
 
 #### high_res.py
 
-Below you have the parameter menu given to you for low_res.py. 
+Below you have the parameter menu given to you for high_res.py. 
+
 ```
-OV directory
-NO directory or parent directory only containing NO directories
+low resolution directory
+high resolution directory
 Output directory
 project name
 Invert HR images
-rescale OV factor
+low resolution rescale factor
 octave_size
 Model_index
 using a windows machine
-run test(if OV has not been inverted)
+run test(if your low resolution has not been rescaled)
 ```
 
 
-OV DIRECTORY, The directory with all the OV images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+LOW RESOLUTION DIRECTORY, The directory with all the OV images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
-NO DIRECTORY OR PARENT DIRECTORY ONLY CONTAINING NO DIRECTORIES, The directory with all the NO images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+HIGH RESOLUTION DIRECTORY, The directory with all the NO images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
@@ -83,10 +85,35 @@ INVERT HR IMAGES, specify whether you would like your high resolution images inv
 
 RESCALE OV FACTOR, specify the magnitude difference between high and low resolution images. Default is 4, where high resolution images are 4 times more magnified than low resolution.
         
-OCTAVE SIZE, maximum image size(px). Default should be 1000.
+OCTAVE_SIZE, maximum image size(px). Default should be 1000.
 
-MODEL INDEX, choice of alignment between translation, rigid, similarity and affine.
+MODEL_INDEX, choice of alignment between translation, rigid, similarity and affine.
 
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
-RUN TEST(IF OV HAS NOT BEEN INVERTED) specify whether you would like to run a test to check if alignment will work.
+RUN TEST specify whether you would like to run a test to check if alignment will work.
+
+#### final_alignment.py
+
+Below you have the parameter menu given to you for final_alignment.py. 
+```
+directory
+Output directory
+project name
+octave_size
+Model_index
+using a windows machine
+```
+
+
+DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+
+OUTPUT DIRECTORY, an empty directory where output images will be placed.
+
+PROJECT NAME, chosen name for your Trackem2 project.
+        
+OCTAVE_SIZE, maximum image size(px). Default should be 1000.
+
+MODEL_INDEX, choice of alignment between translation, rigid, similarity and affine.
+
+USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
