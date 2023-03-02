@@ -1,4 +1,3 @@
-# automating_catmaid
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
