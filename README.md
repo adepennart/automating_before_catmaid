@@ -1,6 +1,8 @@
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
+Additionally, a final_alignment.py script is provided to align all substacks (in the z-plane), for either low_res.py or high_res.py outputs.
+
 The scripts runs on ImageJ.
 
 
