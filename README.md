@@ -1,7 +1,7 @@
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
-Additionally, a final_alignment.py script is provided to align all substacks (in the z-plane), for either low_res.py or high_res.py outputs.
+Additionally, a final alignment script (final_alignment.py) is provided to align all substacks (in the z-plane), for either low_res.py or high_res.py outputs.
 
 The scripts runs on ImageJ.
 
@@ -19,10 +19,10 @@ The script runs with ImageJ/Fiji=1.53. ImageJ can be downloaded via the link bel
 https://imagej.net/software/fiji/downloads
 
 ## Usage
-The script can be dragged onto the ImageJ toolbar and this will open up of the script.
+The script can be opened by dragging it onto the ImageJ toolbar.
 You can also open via the File>Open.. tab for ImageJ.
 
-Once the script loaded, there is a 'Run' button on the bottom left. Pressing this button will prompt you with a menu of parameters to fill.
+Once the script is loaded, there is a 'Run' button on the bottom left. Pressing this button will prompt you with a menu of parameters to fill.
 
 ### Input
 #### low_res.py
@@ -74,9 +74,9 @@ run test(if your low resolution has not been rescaled)
 ```
 
 
-LOW RESOLUTION DIRECTORY, The directory with all the OV images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
-HIGH RESOLUTION DIRECTORY, The directory with all the NO images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
