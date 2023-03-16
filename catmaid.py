@@ -16,7 +16,7 @@ Usage:
 	to be used through Imagej as a script
 	Pressing the bottom left Run button in the Script window will present user with prompt window for running script
 known error:
-    No known errors
+    selecting "add images.." and "is project..." will add tiles from layer 1 to end even if this is not what you want.
    	 
 based off of Albert Cardona 2011-06-05 script
 """
