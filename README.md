@@ -98,7 +98,7 @@ RUN TEST specify whether you would like to run a test to check if alignment will
 
 Below you have the parameter menu given to you for final_alignment.py. 
 ```
-directory
+Input directory
 Output directory
 project name
 octave_size
@@ -107,7 +107,7 @@ using a windows machine
 ```
 
 
-DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
@@ -118,3 +118,33 @@ OCTAVE_SIZE, maximum image size(px). Default should be 1000.
 MODEL_INDEX, choice of alignment between translation, rigid, similarity and affine.
 
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
+
+
+#### catmaid.py
+
+Below you have the parameter menu given to you for final_alignment.py. 
+
+```
+Input directory
+Output directory
+project name
+using a windows machine
+add images to layers in trackem2
+export images as unprocessed and processed"
+is project already loaded in trakem2 as only loaded project
+```
+
+
+INPUT DIRECTORY, The directory with all the images to be aligned.
+
+OUTPUT DIRECTORY, an empty directory where output images will be placed.
+
+PROJECT NAME, chosen name for your Trackem2 project.
+        
+USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
+
+ADD IMAGES...TRACKEM2, add images to layers of trakem2 project.
+
+EXPROT IMAGES...PROCESSED, specify whether you would like to export images as processed and unprocessed.
+
+IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or use the one and only project already loaded in trakem2.
