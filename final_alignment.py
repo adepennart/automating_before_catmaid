@@ -29,7 +29,7 @@ known error:
 based off of Albert Cardona 2011-06-05 script
 """
 
-#@ File (label = "directory", style = "directory") folder
+#@ File (label = "Input directory", style = "directory") folder
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
@@ -112,7 +112,8 @@ for num in range(0,len(OV_folder_list)):
 	temp_proj_name=project_name+"_"+str(num)
 	sub_OV_folders=folder_find(OV_folder_list[num], windows) #find tile directories for each substack
 	filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_3)
-	print(filenames_keys, filenames_values)
+	print("found files")
+	# print(filenames_keys, filenames_values)
 	big_names_keys.append(filenames_keys[0])
 	big_names_values.append(filenames_values[0])
 
@@ -130,16 +131,15 @@ if temp_proj_name+"test.xml" in file_list:  #checks whether project already exis
 				sys.exit()
 project = Project.newFSProject("blank", None, proj_dir) #Creates a TrakEM2 project
 #Project.getProjects().get(0)
-project.adjustProperties() #adjust properties window
 layerset = project.getRootLayerSet() #creates initial collection of layers variable
-print(big_names_keys, big_names_values)
+# print(big_names_keys, big_names_values)
 
 
 #could be interesting for integration into OV_overall to specify first item, here it does not matter
 counter=0
 counter_list=[counter]
 for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
-	print(counter)
+	#print(counter)
 	layerset=add_patch_v2([big_names_keys[i]],[big_names_values[i]]
 	, project, counter, counter+len(big_names_values[i]))
 	counter+=len(big_names_values[i])
@@ -150,14 +150,14 @@ new_roi_list=[]
 #might be useful to get the layset in a list
 for layer in layerset.getLayers():
 	layer_list.append(layer)
-	
+print("before align")	
 #roi shindig won't work with more than 1 tile
 for i in range(0, len(big_names_keys)-1): #aligns layers
 	for j in range(i+1, i+2):
-		print(big_names_values[i][-1], big_names_values[j][0])
-		print(counter_list[i]+len(big_names_values[i]),counter_list[j]+1)
-		print(counter_list[i]+len(big_names_values[i])-1,counter_list[j])
-		print(layer_list[counter_list[i]+len(big_names_values[i])-1],layer_list[counter_list[j]])
+		# print(big_names_values[i][-1], big_names_values[j][0])
+		# print(counter_list[i]+len(big_names_values[i]),counter_list[j]+1)
+		# print(counter_list[i]+len(big_names_values[i])-1,counter_list[j])
+		# print(layer_list[counter_list[i]+len(big_names_values[i])-1],layer_list[counter_list[j]])
 		#getting all patches
 		tiles = layer_list[counter_list[i]+len(big_names_values[i])-1].getDisplayables(Patch) #get list of tiles
 		for tile in tiles[0:]:
@@ -180,14 +180,14 @@ for i in range(0, len(big_names_keys)-1): #aligns layers
 		y_dif =  new_roi.y-roi.y
 		#super inneficient
 		for k in range(counter_list[j]+1, counter_list[j]+len(big_names_values[j])):
-			print(k)
 			tiles=layer_list[k].getDisplayables(Patch)
 			for tile in tiles[0:]:
 				tile.translate(x_dif,y_dif)
-			
+print("saving project")		
 project.saveAs(os.path.join(proj_dir, temp_proj_name+"aligned"), False) #save project file, after z alignment
 layerset.setMinimumDimensions() #readjust canvas to only NO tiles)
 #exports images
+print("before image export")		
 mini_dir= make_dir(output_dir,  "export_unprocessed")
 export_image(layerset, mini_dir, canvas_roi=True)
 mini_dir= make_dir(output_dir,  "export_processed")
