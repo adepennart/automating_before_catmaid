@@ -698,7 +698,7 @@ def overlap_area(ROI=None):
 def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, size=None, roi=None): #layerset=None, project=None
 	imp = plugin.FolderOpener.open(filenames_keys[0], "virtual"); #open image stack
 	title=imp.getTitle() #get image stack name
-	ROI=imp.setRoi(roi.x-10,roi.y-10,roi.width+10,roi.height+10); #get roi values, with 10px of wiggle room
+	ROI=imp.setRoi(roi.x-30,roi.y+30,roi.width+30,roi.height-30); #get roi values, with 10px of wiggle room
 	#print(imp.getDimensions())
 	imp=imp.crop("stack") #crop image to new roi
 	old_dim=imp.getDimensions()
