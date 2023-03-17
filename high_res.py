@@ -213,8 +213,8 @@ if test:
 				roi_list.append(roi)
 				tiles_list.append(tiles)
 	print(roi_list)
-	max_roi=max(roi_list)
-	print(max_roi)
+	#max_roi=max(roi_list)
+	#print(max_roi)
 
 try: #if not running test opens up previous test project file, clunky way deciding between test mode or not
 	project_list[1]
@@ -265,7 +265,7 @@ for num in range(0,len(OV_folder_list)):
 			filenames_keys, filenames_values = resize_image(filenames_keys, 
 															filenames_values, 
 															output_scaled, windows, 
-															temp_proj_name, pattern_3, size, max_roi)
+															temp_proj_name, pattern_3, size, roi_list[num])
 	print("files potentially cropped and or inverted")
 	# print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
