@@ -1,7 +1,7 @@
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
-Additionally, two other scripts are available. the first, final alignment script (final_alignment.py), is provided to align all substacks (in the z-plane), for either low_res.py or high_res.py outputs and the second for uploading the processed images to trakem2 to then export them in catmaid format.
+Additionally, two other scripts are available. the first, final alignment script (final_alignment.py), is provided to align all substacks (in the z-plane), for either low_res.py or high_res.py outputs and the second (catmaid.py) for uploading the processed images to trakem2 to then export them in catmaid format.
 
 The scripts runs on ImageJ.
 
