@@ -186,11 +186,12 @@ def folder_find(loop_fold=None,  windows=None, append_fold=None):
             filename = loop_fold+"\\"+filename
         elif not windows:
             filename = loop_fold+"/"+filename
-#		print(filename)
+#		print(filename) 
         if os.path.isdir(filename):
-            #		print("found folder")
+            print("found folder")
             all_folder_list.append(filename)
     # if no folders found loop_fold, assumes this is instead the folder to find files
+    
     if len(all_folder_list) == 0:
         all_folder_list.append(loop_fold)
     # appends folders for the beginning of list (folders assumed to contain files of interest)
@@ -392,19 +393,55 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 #		all layers in trakem2 project
 
 
-def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None):  # layerset=None,
+def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None,transform_folder=None,scaling_factor=1):  # layerset=None,
     layerset = project.getRootLayerSet()  # get the layerset
     for i in range(start_lay, tot_lay):  # add to the layerset the desired amount of layers
         layerset.getLayer(i, 1, True)
     for i, layer in enumerate(layerset.getLayers()):  # add images to each layer
         if i >= start_lay:
             for n, fold in enumerate(filenames_keys):
+                if transform_folder:
+                    file= "image_stack_"+str(n+1)+".xml"
+                    path=os.path.join(transform_folder,file)
+                    if scaling_factor != 1:
+	                    test=open(path,"r")
+	                    content=test.read()
+	                    print(content)
+	                    data_string=re.findall("data=\"[\d.\sE-]+", content) # makes directory
+	                    #should only be one line in content
+	                    numbers=data_string[0].replace("data=\"","")
+	#                    print(number[0].replace("data=\"",""))
+	                    numbers=re.findall("[\d.-E]+", numbers)
+	                    new_x=str(float(numbers[4])/scaling_factor)
+	                    new_y=str(float(numbers[5])/scaling_factor)
+	                    #would replace all instances, so safety measure needed?
+	                    new_data_string=data_string[0].replace(numbers[4],new_x)
+	                    new_data_string=new_data_string.replace(numbers[5],new_y)
+	#                    print(new_data_string)
+	                    new_content=content.replace(data_string[0],new_data_string)
+	                    print(new_content)
+	                    test.close()
+	                    test=open(path,"w")
+	                    test.write(new_content)
+	                    test.close()
+                    transform = Transform_VS.readCoordinateTransform(path)
+	            #print(filenames_values[n][i-start_lay])
+	            
+	            
+	         
+#	            patch.updateMipMaps()
+	            
+	            #print(patch)
+	            
                 # print(fold)
                 # print(filenames_values[n][i-start_lay])
                 # print(i+start_lay)
                 filepath = os.path.join(fold, filenames_values[n][i-start_lay])
                 patch = Patch.createPatch(project, filepath)
+                if transform_folder:
+                	patch.setCoordinateTransform(transform)
                 layer.add(patch)
+#                patch.updateMipMaps()
         #		print(patch)
             layer.recreateBuckets()  # update layerset?
     return layerset
@@ -507,7 +544,7 @@ def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None
     # feature descriptin defautl
 
 
-def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None):
+def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None,transform=False):
     # variables
     non_move = []
     roi = None
@@ -574,10 +611,15 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
             roi = roi_list
         if not OV_lock:  # roi for each stack of images is collected
             roi = tiles[1].getBoundingBox()  # needed in OV alignment
-            print(roi,"before")
+#            print(roi,"before")
+            print(tiles[1].getBoundingBox())
             for tile in tiles[1:]:
                 roi.add(tile.getBoundingBox())
-            print(roi,"after")
+                print(tile.getBoundingBox())
+#            print(roi,"after")
+        if transform:
+	        transforms, transform_XML=get_patch_transform_data(layerset)
+	        return  roi, tiles, transforms, transform_XML
     return roi, tiles
 
 
@@ -1175,11 +1217,10 @@ def get_patch_transform_data(layerset):
         for n, tile in enumerate(tiles):
             # Get the transformation for the tile
             transform = tile.getFullCoordinateTransform()
-
+            print(transform)
             # Store the transformation data for the tile
             transformation_data[n] = transform
             transformation_files.append(transform.toXML(""))
-
     return transformation_data, transformation_files
    
 def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
@@ -1200,7 +1241,8 @@ def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
         title = imp.getTitle()
         if size:
             #old_dim = imp.getDimensions()
-            scaling_factor=get_scaling_factor(imp)
+            if num == 0:
+	            scaling_factor=get_scaling_factor(imp)
             width = int((imp.getDimensions()[0])*scaling_factor)
             height = int((imp.getDimensions()[1])*scaling_factor)
             #I am not sure what to use here. "bilinear" is recommended, but gives black outlines in the picture.
@@ -1218,14 +1260,14 @@ def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
                            imp, title, windows, True)
         temp_filenames_keys[num] = sub_dir  # reasigns new filepath and image
         temp_filenames_values[num] = [title]
-    return temp_filenames_keys, temp_filenames_values
+    return temp_filenames_keys, temp_filenames_values, scaling_factor
 
 def get_scaling_factor(tiles):
     gd = GenericDialog("Image Rescale Factor")
     current_width = tiles.getWidth()
     current_height = tiles.getHeight()
     gd.addMessage("Current size: %d x %d" % (current_width, current_height))
-    gd.addNumericField("Rescaling Factor", 0.05, 2)  # Default rescaling factor of 0.5
+    gd.addNumericField("Rescaling Factor", 0.2, 2)  # Default rescaling factor of 0.5
     gd.showDialog()
 
     if gd.wasCanceled():
@@ -1384,6 +1426,7 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
             # for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
             # 	for m, tile_2 in enumerate(tiles[n:]):
             # 		tile.link(tile_2)
+        
         joinTilesElastic(param, tiles)
         if OV_lock:  # could be optimzied here, as repeat,funciton could take in value instead of OV_lock
             # for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
@@ -1427,7 +1470,7 @@ from loci.plugins import BF
 #        tif_path = "{}/{}.tif".format(export_directory, idx)
 #        IJ.saveAsTiff(layer_image, tif_path)
 
-def exportProject(project=None, output_dir=None, canvas_roi=False, processed=True):
+def exportProject(project=None, output_dir=None, canvas_roi=False, processed=False, blend=False):
     # export variables
     
     export_type = 0  # GRAY8
@@ -1454,18 +1497,39 @@ def exportProject(project=None, output_dir=None, canvas_roi=False, processed=Tru
             roi = tiles[0].getBoundingBox()
             for tile in tiles[1:]:
                 roi.add(tile.getBoundingBox())
-        if processed:  # processes image if desired
+        if blend:  # processes image if desired
             Blending.blend(set(tiles), 0)
-        imp=Transform.ExportUnsignedShort.makeFlatImage(  # image paramaters
-            tiles,
+        ip = Patch.makeFlatImage(  # image paramaters
+            export_type,
+            layer,
             roi,
-            0.0,
-            scale)  # Make alpha mask
-        
-        img = ImagePlus("Flat montage", imp)  # creates image
-        
+            scale,
+            tiles,
+            backgroundColor,
+            True)  # use the min and max of each tile
+            
+         #on mac this does not export correctly
+#        imp=Transform.ExportUnsignedShort.makeFlatImage(  # image paramaters
+#            tiles,
+#            roi,
+#            0.0,
+#            scale)  # Make alpha mask
+#        img = ImagePlus("Flat montage", imp)  # creates image
+        img = ImagePlus("Flat montage", ip)  # creates image
+        if processed:  # processes image if desired
+            img.getProcessor().blurGaussian(sigmaPixels)
+#			pretty sure 3 refers to median_filter
+#			https://imagej.nih.gov/ij/developer/api/ij/ij/process/ImageProcessor.html#filter(int)
+#			imp.getProcessor().filter(3)
+            FastFlat.getFastInstance().run(img,
+                                           blocksize,
+                                           histogram_bins,
+                                           maximum_slope,
+                                           mask,
+                                           composite)
         FileSaver(img).saveAsTiff(output_dir + "/" + str(i + 1) +
                                   ".tif")  # saves file to output directory
+
 # def exportProject(project, export_directory):
 #     # Get the list of layers in the project
 #     layers = project.getRootLayerSet().getLayers()

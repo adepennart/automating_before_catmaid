@@ -15,7 +15,7 @@ List of "non standard modules"
 	module functions.py used for this script
 
 Procedure:
-    1. multiple checks to ensure proper file and file structure
+    1. multiple checks to ensure proper file and file structurer
     2. scales low resolution stack (ie. 4x magnification)
     3. creates trakem2 project
     4. creates layers and populates with one image from low resolution and from high resolution folders
@@ -25,6 +25,7 @@ Procedure:
 Usage:
 	to be used through Imagej as a script
 	Pressing the bottom left Run button in the Script window will present user with prompt window for running script
+
 
 known error:
     1. only accepts tif files as input
@@ -104,6 +105,7 @@ filenames_keys_big =[]
 filenames_values_big = []
 file_keys_big_list=[]
 file_values_big_list=[]
+scaling_number_list=[]
 proj_folds=[]
 project=''
 octave_increase=0
@@ -162,6 +164,7 @@ else:
     OV_folder_list=file_sort(OV_folder_list, -1) #sort
     NO_folder_list=folder_find(folder_path_2,windows)
     NO_folder_list=file_sort(NO_folder_list, -1) #sort
+    print(OV_folder_list,NO_folder_list)
     for num in range(0,len(OV_folder_list)):
         # temp_proj_name=project_name+"_"+str(num)
         # joint_folder=mut_fold(OV_folder_list[num],NO_folder_list[num],windows)  #find tile directories for each substack
@@ -169,7 +172,9 @@ else:
         sub_OV_folders=file_sort(sub_OV_folders, -1) #sort
         all_folder_list=folder_find(NO_folder_list[num],  windows, sub_OV_folders)
         # all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
+        print(all_folder_list)
         filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
+  
         filenames_keys_big.append(filenames_keys)
         filenames_values_big.append(filenames_values)
         print("folder and its content registered")
@@ -230,22 +235,23 @@ for num in range(0,len(OV_folder_list)):
             temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys[1:], 
                                                              filenames_values[1:], 
                                                              test_dir, windows, 
-                                                             temp_proj_name,inverted_image,size,empty=True)
+                                                             temp_proj_name,inverted_image,size,empty=True)                                                      
 #                                                             temp_proj_name,inverted_image,size,empty=True)
             temp_filenames_keys = [filenames_keys[0]]+temp_filenames_keys
             temp_filenames_values =	[filenames_values[0]]+temp_filenames_values	
             #this is for resizing to facilitate operations,redundatly saves file twice
             print(temp_filenames_keys)
-            temp_filenames_keys,temp_filenames_values = prep_test_align_viggo(temp_filenames_keys, #inverts images for test alignment
+            temp_filenames_keys,temp_filenames_values, scaling_number = prep_test_align_viggo(temp_filenames_keys, #inverts images for test alignment
 														temp_filenames_values, 
 														test_dir_2, windows, #output_dir --> test_dir this is just a test
-														temp_proj_name, invert_image=False, size=False)	
-#            temp_filenames_keys,temp_filenames_values = prep_test_align_viggo(filenames_keys[1:], 
-#                                                        filenames_values[1:], 
-#														test_dir, windows, #output_dir --> test_dir this is just a test
+														temp_proj_name, invert_image=False, size=True)	
+#            temp_filenames_keys_2,temp_filenames_values_2 = prep_test_align_viggo(temp_filenames_keys[1:], 
+#                                                        temp_filenames_values[1:], 
+#														test_dir_2, windows, #output_dir --> test_dir this is just a test
 #														temp_proj_name, invert_image=True, size=True)	
-#            temp_filenames_keys = [filenames_keys[0]]+temp_filenames_keys
-#            temp_filenames_values =	[filenames_values[0]]+temp_filenames_values																													
+#            temp_filenames_keys_2 = [temp_filenames_keys[0]]+temp_filenames_keys_2
+#            temp_filenames_values_2 =	[temp_filenames_values[0]]+temp_filenames_values_2																													
+#            print(temp_filenames_keys_2, temp_filenames_values_2)
             print(temp_filenames_keys, temp_filenames_values)
             layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1) #creates layerset and adds images
             if Elastic:
@@ -260,7 +266,10 @@ for num in range(0,len(OV_folder_list)):
             if not Elastic:
 				#Do i need true in align_layers
 #                roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
-                roi, tiles =align_layers(model_index, octave_size, layerset) #aligns images
+                roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
+                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+                save_xml_files(transform_XML, transform_dir)
+                transform_list.append(transform_dir)
             # roi, tiles =align_layers(model_index, octave_size, layerset)  #aligns images
             project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
             layerset.setMinimumDimensions() #readjust canvas to only NO tiles
@@ -273,13 +282,18 @@ for num in range(0,len(OV_folder_list)):
     #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
             gui.showDialog()
             if gui.wasOKed():
+                if num > 0:
+                   project.remove(True)  
                 break
             if not gui.wasOKed():
                 octave_increase+=1
+                project.remove(True) 
         if not test:
-           break                
+           break
     file_keys_big_list.append(filenames_keys)
     file_values_big_list.append(filenames_values)
+    scaling_number_list.append(scaling_number)
+    IJ.run("Close All")
 #print(file_keys_big_list)	
 #print(filenames_keys)
 print("initiall alignment test done")
@@ -320,45 +334,45 @@ try: #if not running test opens up previous test project file, clunky way decidi
 except IndexError:
 	proj_folds=folder_find(proj_dir,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
 	proj_folds=file_sort(proj_folds, -1) 
-    # print(proj_folds)
+	print(proj_folds[0])
 	projects=Project.getProjects()
-	for proj in proj_folds:
+#	for proj in proj_folds:
+	for proj in [proj_folds[0]]:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
 		xml_filepath = os.path.join(proj,xml_file[0])
 		for projected in projects: # finds test project file if open in trakem2 
 			if (xml_file[0].split("."))[0] in str(projected):
 				project = Project.getProject(projected)
-            # if (xml_file[0].split("."))[0] in str(proj):
+	        # if (xml_file[0].split("."))[0] in str(proj):
 			# 	project = Project.getProject(proj)
 				break
 		if not project:
 			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
 		project=''
-# project_list=file_sort(project_list)
-# print(project_list)
+	# project_list=file_sort(project_list)
+	# print(project_list)
 
 #Closes open windows to open cache memory
 IJ.run("Close All")
 
 #changed to len(projec_list) since OV_folder_list doesnt accounnt fro the empty substack
-for num in range(0,len(project_list)): #this is for adjusting images to be cropped and, if necessary, inverted. 
+for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cropped and, if necessary, inverted. 
 # for num in range(0,len(OV_folder_list)):
-	temp_proj_name=project_name+"_"+str(num)
-	print((project_list[num]))
+#	temp_proj_name=project_name+"_"+str(num)
 	print(file_keys_big_list)
 	# print(type(project_list[num]))
-	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #makes a directory for this project if not already done
-	# print(project)
-	try: #removes images present from the test trakem2 project
-		remove_tiles(tiles_list[num])
-	except IndexError:
-		# print(project)
-		layerset = project.getRootLayerSet()
-		for layer in layerset.getLayers():
-		  	tiles = layer.getDisplayables(Patch)
-			remove_tiles(tiles)
+#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
+#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #makes a directory for this project if not already done
+#	# print(project)
+#	try: #removes images present from the test trakem2 project
+#		remove_tiles(tiles_list[num])
+#	except IndexError:
+#		# print(project)
+#		layerset = project.getRootLayerSet()
+#		for layer in layerset.getLayers():
+#		  	tiles = layer.getDisplayables(Patch)
+#			remove_tiles(tiles)
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	# print("this is before cropped")
@@ -369,62 +383,100 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
 			print(num,"of ",len(OV_folder_list),"substacks processed")
 
-        #resize image
-		if size != 1:
-			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
-			output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
-			filenames_keys, filenames_values = resize_image(filenames_keys, 
-															filenames_values, 
-															output_scaled, windows,
-															# temp_proj_name, pattern_3, size, roi_list[num]) 
-															temp_proj_name, pattern_3, size, max_roi)
+	        #resize image
+			if size != 1:
+				large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
+				output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
+				filenames_keys, filenames_values = resize_image(filenames_keys, 
+																filenames_values, 
+																output_scaled, windows, 
+																temp_proj_name, pattern_3, size, roi_list[num-12])
 	print("files potentially cropped and or inverted")
 	# print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
 
+counter=0
+counter_list=[counter]
+temp_proj_name=project_name+"_"+str(0)
+project = Project.getProject(project_list[0]) #selects appropriate project for image substack
+sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for this project if not already done
+try: #removes images present from the test trakem2 project
+	remove_tiles(tiles_list[0])
+except IndexError:
+	# print(project)
+	layerset = project.getRootLayerSet()
+	for layer in layerset.getLayers():
+	  	tiles = layer.getDisplayables(Patch)
+		remove_tiles(tiles)
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
-	temp_proj_name=project_name+"_"+str(num)
-	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-	if Elastic:
-		transform =  transform_list[num]
+#	temp_proj_name=project_name+"_"+str(num)
+#	project = Project.getProject(project_list[0]) #selects appropriate project for image substack
+#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for this project if not already done
+#	try: #removes images present from the test trakem2 project
+#		remove_tiles(tiles_list[0])
+#	except IndexError:
+#		# print(project)
+#		layerset = project.getRootLayerSet()
+#		for layer in layerset.getLayers():
+#		  	tiles = layer.getDisplayables(Patch)
+#			remove_tiles(tiles)
+#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
+#	if Elastic:
+#	   transform =  transform_list[num]
+	transform =  transform_list[num]
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
-
+#	print(filenames_keys)
+#	print("here")
+#	print(filenames_values)
+	print(counter)
+#for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
+	#print(counter)
+	layerset=add_patch_v2(filenames_keys,filenames_values
+	, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num])
+	counter+=len(filenames_values[0])
+	counter_list.append(counter)
+#	if num == 1:
+#		sys.exit()
     #add stack to trakem2	
 	#fix add_patch	
 	print("prepared tile order for best overlay")
+	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
 #	layerset=add_patch(filenames_keys, filenames_values, project, 1, len(filenames_values[0]))												
-	if Elastic:
-		layerset=add_patch_andTransform(filenames_keys[0:], filenames_values[0:], project, 0, len(filenames_values[0]), transform_folder=transform)
-	if not Elastic:
-		layerset=add_patch(filenames_keys, filenames_values, project, 0, len(filenames_values[0]))
+#	if Elastic:
+#		layerset=add_patch_andTransform(filenames_keys[0:], filenames_values[0:], project, 0, len(filenames_values[0]), transform_folder=transform)
+#	if not Elastic:
+#		layerset=add_patch(filenames_keys, filenames_values, project, 0, len(filenames_values[0]))
 	#align high to low res image 
 	# align_layers(model_index, octave_size, layerset)
 #	align_layers(model_index, octave_size, layerset, True) #could change number of threads
-	align_layers(model_index, octave_size, layerset) #could change number of threads
-    #	Saves the project with OV
-	project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment 	
-    # if proj_folds:
-	# 	project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"with_low_res"), False)
-	# else:
-	# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"with_low_res"), False)
-	#removes the OV tile
-	layerset.setMinimumDimensions() #readjust canvas to only high res tiles
-	#remove OV from layers
-	remove_OV(layerset,0)
-	#exports images
-	mini_dir= make_dir(output_dir,  "export_"+str(num))
-	exportProject(project, mini_dir,canvas_roi=True)
-    # export_image(layerset, mini_dir, canvas_roi=True)#, processed=False)
-	#	Saves the project without OV
-	
-    # if proj_folds:
-	# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
-	# else:
-	# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+#align_layers(model_index, octave_size, layerset) #could change number of threads
+#	Saves the project with OV
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment 	
+# if proj_folds:
+# 	project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"with_low_res"), False)
+# else:
+# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"with_low_res"), False)
+#removes the OV tile
+layerset.setMinimumDimensions() #readjust canvas to only high res tiles
+#remove OV from layers
+remove_OV(layerset,0)
+#exports images
+mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
+exportProject(project, mini_dir,canvas_roi=True)
+mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
+exportProject(project, mini_dir,canvas_roi=True, processed=True)
+# export_image(layerset, mini_dir, canvas_roi=True)#, processed=False)
+#	Saves the project without OV
 
+# if proj_folds:
+# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+# else:
+# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+#IJ.run("Close All")
+#	project.remove(False)
 optionalCloseingAndDeleting(project,output_dir,project_name)
 
 print("Done!")
