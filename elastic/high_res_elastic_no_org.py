@@ -174,7 +174,6 @@ else:
         # all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
         print(all_folder_list)
         filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
-  
         filenames_keys_big.append(filenames_keys)
         filenames_values_big.append(filenames_values)
         print("folder and its content registered")
@@ -254,6 +253,7 @@ for num in range(0,len(OV_folder_list)):
 #            print(temp_filenames_keys_2, temp_filenames_values_2)
             print(temp_filenames_keys, temp_filenames_values)
             layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1) #creates layerset and adds images
+            scaling_number_list.append(scaling_number)
             if Elastic:
 				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
 				#print(type(layerset),type(layerset_lowRes))
@@ -272,6 +272,9 @@ for num in range(0,len(OV_folder_list)):
                 transform_list.append(transform_dir)
             # roi, tiles =align_layers(model_index, octave_size, layerset)  #aligns images
             project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
+            scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+            scaling_number_file.write(str(scaling_number))
+            scaling_number_file.close()
             layerset.setMinimumDimensions() #readjust canvas to only NO tiles
             tiles_list.append(tiles)
             roi_list.append(roi)
@@ -292,7 +295,6 @@ for num in range(0,len(OV_folder_list)):
            break
     file_keys_big_list.append(filenames_keys)
     file_values_big_list.append(filenames_values)
-    scaling_number_list.append(scaling_number)
     IJ.run("Close All")
 #print(file_keys_big_list)	
 #print(filenames_keys)
@@ -336,6 +338,8 @@ except IndexError:
 	proj_folds=file_sort(proj_folds, -1) 
 	print(proj_folds[0])
 	projects=Project.getProjects()
+	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
+	transform_folds=file_sort(transform_folds, -1) 
 #	for proj in proj_folds:
 	for proj in [proj_folds[0]]:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
@@ -352,6 +356,26 @@ except IndexError:
 		project=''
 	# project_list=file_sort(project_list)
 	# print(project_list)
+	for transformed in transform_folds:#find out why only one scaling_file comes
+		print(transformed)
+		print("hi")
+		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
+#		transform_files=filter(re.compile("image_stack_\d+.xml").match, os.listdir(transformed))
+#		print(scaling_file, transformed)
+		transform_list.append(transformed)
+#		transform_list.append(transform_files)
+		path=os.path.join(transformed,scaling_file[0])
+		print(os.path.isfile(path))
+		with open(path, 'r+') as f:
+		   for line in f :
+		       print(line)
+		       scaling_number_list.append(float(line))
+
+        
+        print(scaling_number_list)
+
+
+	
 
 #Closes open windows to open cache memory
 IJ.run("Close All")
@@ -390,7 +414,7 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 				filenames_keys, filenames_values = resize_image(filenames_keys, 
 																filenames_values, 
 																output_scaled, windows, 
-																temp_proj_name, pattern_3, size, roi_list[num-12])
+																temp_proj_name, pattern_3, size, roi_list[num])
 	print("files potentially cropped and or inverted")
 	# print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
@@ -431,7 +455,7 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 #	print(filenames_keys)
 #	print("here")
 #	print(filenames_values)
-	print(counter)
+	print(transform, scaling_number_list[num])
 #for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
 	#print(counter)
 	layerset=add_patch_v2(filenames_keys,filenames_values
@@ -471,8 +495,7 @@ exportProject(project, mini_dir,canvas_roi=True, processed=True)
 # export_image(layerset, mini_dir, canvas_roi=True)#, processed=False)
 #	Saves the project without OV
 
-# if proj_folds:
-# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
 # else:
 # 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
 #IJ.run("Close All")

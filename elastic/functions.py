@@ -401,11 +401,11 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
         if i >= start_lay:
             for n, fold in enumerate(filenames_keys):
                 if transform_folder:
-                    file= "image_stack_"+str(n+1)+".xml"
-                    path=os.path.join(transform_folder,file)
+                    xml_file= "image_stack_"+str(n+1)+".xml"
+                    path=os.path.join(transform_folder,xml_file)
                     if scaling_factor != 1:
-	                    test=open(path,"r")
-	                    content=test.read()
+	                    transform_file=open(path,"r")
+	                    content=transform_file.read()
 	                    print(content)
 	                    data_string=re.findall("data=\"[\d.\sE-]+", content) # makes directory
 	                    #should only be one line in content
@@ -420,11 +420,12 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 	#                    print(new_data_string)
 	                    new_content=content.replace(data_string[0],new_data_string)
 	                    print(new_content)
-	                    test.close()
-	                    test=open(path,"w")
-	                    test.write(new_content)
-	                    test.close()
-                    transform = Transform_VS.readCoordinateTransform(path)
+	                    transform_file.close()
+	                    path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+	                    transform_file=open(path_w_scaling,"w")
+	                    transform_file.write(new_content)
+	                    transform_file.close()
+                    transform = Transform_VS.readCoordinateTransform(path_w_scaling)
 	            #print(filenames_values[n][i-start_lay])
 	            
 	            
