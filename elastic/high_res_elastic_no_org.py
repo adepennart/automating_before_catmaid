@@ -357,22 +357,19 @@ except IndexError:
 	# project_list=file_sort(project_list)
 	# print(project_list)
 	for transformed in transform_folds:#find out why only one scaling_file comes
-		print(transformed)
-		print("hi")
+#		print(transformed)
 		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
 #		transform_files=filter(re.compile("image_stack_\d+.xml").match, os.listdir(transformed))
 #		print(scaling_file, transformed)
 		transform_list.append(transformed)
 #		transform_list.append(transform_files)
 		path=os.path.join(transformed,scaling_file[0])
-		print(os.path.isfile(path))
+#		print(os.path.isfile(path))
 		with open(path, 'r+') as f:
 		   for line in f :
-		       print(line)
+#		       print(line)
 		       scaling_number_list.append(float(line))
-
-        
-        print(scaling_number_list)
+#        print(scaling_number_list)
 
 
 	

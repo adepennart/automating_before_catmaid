@@ -1561,7 +1561,7 @@ def add_patch_andTransform(filenames_keys=None, filenames_values=None, project=N
             filepath = os.path.join(fold, filenames_values[n][i-start_lay])
             patch = Patch.createPatch(project, filepath)
             patch.setCoordinateTransform(transform)
-            patch.updateMipMaps()
+#            patch.updateMipMaps()
             layer.add(patch)
             #print(patch)
             layer.recreateBuckets() #update layerset?
