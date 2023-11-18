@@ -95,6 +95,7 @@ tiles_list=[]
 project_list=[]
 file_keys_big_list=[]
 file_values_big_list=[]
+scaling_number_list=[]
 proj_folds=[]
 transform_list=[]
 numThreads=1
@@ -140,12 +141,16 @@ else:
 	stacks = get_file_paths_folders(folder_path)
 	OV_folder_list=folder_find(folder_path,windows) # get OV subdirectories
 	OV_folder_list=file_sort(OV_folder_list, -1) #sort
-	OV_folder_list=[OV_folder_list]
+#	OV_folder_list=[OV_folder_list]
+	print(OV_folder_list)
+	
 	filenames_keys_big =[]
 	filenames_values_big = []
-	for num in range(0,len(OV_folder_list)): #find files and paths and test alignment for each substack
-		for num2, image in enumerate(OV_folder_list[num]):
-			sub_OV_folders=folder_find(image, windows) #find tile directories for each substack
+	for num, fold in enumerate(OV_folder_list): #find files and paths and test alignment for each substack
+#	for num in range(0,len(OV_folder_list)): #find files and paths and test alignment for each substack
+#		for num2, image in enumerate(OV_folder_list[num]):
+			sub_OV_folders=folder_find(fold, windows) #find tile directories for each substack
+#			sub_OV_folders=folder_find(image, windows) #find tile directories for each substack
 			sub_OV_folders=file_sort(sub_OV_folders, -1) #sort
 			filenames_keys, filenames_values=file_find(sub_OV_folders, pattern_1, pattern_3)
 			filenames_keys_big.append(filenames_keys)
@@ -163,6 +168,9 @@ proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make pro
 transform_dir_big = make_dir(grand_joint_folder,"transform parameters") #make transform folder
 if inverted_image: 
 	large_OV_interim= make_dir(grand_joint_folder, "invert_interim_1"+project_name) #make inverted image directory
+
+
+
 
 for num in range(0,len(OV_folder_list)): #find files and paths and test alignment for each substack
 	octave_increase = 0
@@ -195,21 +203,27 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
 			#project.adjustProperties() #adjust properties window, not needed as we are going to avoid using mipmap to reduce storage space
 			layerset = project.getRootLayerSet() #creates initial collection of layers variable
-			temp_filenames_keys,temp_filenames_values = prep_test_align_viggo(filenames_keys, #inverts images for test alignment
+			temp_filenames_keys,temp_filenames_values,scaling_number = prep_test_align_viggo(filenames_keys, #inverts images for test alignment
 														filenames_values, 
-														output_dir, windows, #output_dir --> test_dir this is just a test
-														temp_proj_name, inverted_image, size=True)
+														test_dir, windows, #output_dir --> test_dir this is just a test
+														temp_proj_name, inverted_image, size=True)	
 			layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)#creates layerset and adds images
+			scaling_number_list.append(scaling_number)
 			if Elastic:
 				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
 				#print(type(layerset),type(layerset_lowRes))
-				roi, tiles, transforms, transform_XML =align_layers_elastic(param, layerset,True,octave_size)
+				roi, tiles, transform_XML =align_layers_elastic(param, layerset,True,octave_size)
+				
 				#Save XML files
-				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))	
 				save_xml_files(transform_XML, transform_dir)
 				transform_list.append(transform_dir)
 			if not Elastic:
-				roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
+#				roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
+				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
+				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+				save_xml_files(transform_XML, transform_dir)
+				transform_list.append(transform_dir)
 			layerset.setMinimumDimensions() #readjust canvas to minimum dimensions
 			# print(roi, tiles)
 		
@@ -225,6 +239,9 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 # 				assoc_roi_list.append(roi) #place holder variable
 # 			roi_list.append(roi)
 			project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)	#save test run						
+			scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+			scaling_number_file.write(str(scaling_number))
+			scaling_number_file.close()
 			tiles_list.append(tiles)
 			project_list.append(temp_proj_name+"test.xml") #fix for windows
 #			print(filenames_keys, filenames_values)
@@ -233,13 +250,25 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
     #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 			gui.showDialog()
 			if gui.wasOKed():
+				if num > 0:
+					project.remove(True)  
 				break
+			if not gui.wasOKed():
+				octave_increase+=1
+				project.remove(True) 
+
+		if not test:
+			break
 	file_keys_big_list.append(filenames_keys)
 	file_values_big_list.append(filenames_values)
 
+print(file_keys_big_list)
+print(file_values_big_list)
+print(scaling_number_list)
+
 print("initiall alignment test done")
-print(len(project_list), "amount of started projects")
-print(len(OV_folder_list), "amount of processed substacks")
+print(len(project_list)+1, "amount of started projects")
+print(len(OV_folder_list)+1, "amount of processed substacks")
 
 try: #if not running test opens up previous test project file, clunky way deciding between test mode or not
 	project_list[0]
@@ -247,7 +276,9 @@ except IndexError:
 	proj_folds=folder_find(proj_dir,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
 	proj_folds=file_sort(proj_folds, -1) 
 	#print(proj_folds)
-	projects=Project.getProjects()
+	projects=Project.getProjects()	
+	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
+	transform_folds=file_sort(transform_folds, -1) 
 	for proj in proj_folds:
 		xml_file=filter(pattern_xml.match, os.listdir(proj))
 		xml_filepath = os.path.join(proj,xml_file[0])
@@ -262,6 +293,19 @@ except IndexError:
 			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
 		project=''
+	for transformed in transform_folds:#find out why only one scaling_file comes
+#		print(transformed)
+		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
+#		transform_files=filter(re.compile("image_stack_\d+.xml").match, os.listdir(transformed))
+#		print(scaling_file, transformed)
+		transform_list.append(transformed)
+#		transform_list.append(transform_files)
+		path=os.path.join(transformed,scaling_file[0])
+#		print(os.path.isfile(path))
+		with open(path, 'r+') as f:
+		   for line in f :
+#		       print(line)
+		       scaling_number_list.append(float(line))
 #project_list=file_sort(project_list)
 #print(project_list)
 
@@ -274,17 +318,17 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 	#print((project_list[num]))
 	#print(type(project_list[num]))
 #	print(match[0])
-	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #makes a directory for this project if not already done
-	#print(project)
-	try: #removes images present from the test trakem2 project
-		remove_tiles(tiles_list[num]) 
-	except IndexError:
-		#print(project)
-		layerset = project.getRootLayerSet()
-		for layer in layerset.getLayers():
-			tiles = layer.getDisplayables(Patch)
-			remove_tiles(tiles)
+#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
+#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #makes a directory for this project if not already done
+#	#print(project)
+#	try: #removes images present from the test trakem2 project
+#		remove_tiles(tiles_list[num]) 
+#	except IndexError:
+#		#print(project)
+#		layerset = project.getRootLayerSet()
+#		for layer in layerset.getLayers():
+#			tiles = layer.getDisplayables(Patch)
+#			remove_tiles(tiles)
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	# print(filenames_keys, filenames_values)
@@ -325,51 +369,76 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
     
 
 
-
+counter=0
+counter_list=[counter]
+temp_proj_name=project_name+"_"+str(0)
+project = Project.getProject(project_list[0]) #selects appropriate project for image substack
+sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for this project if not already done
+try: #removes images present from the test trakem2 project
+	remove_tiles(tiles_list[0])
+except IndexError:
+	# print(project)
+	layerset = project.getRootLayerSet()
+	for layer in layerset.getLayers():
+	  	tiles = layer.getDisplayables(Patch)
+		remove_tiles(tiles)
+#why plus one
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
-	print(num, len(OV_folder_list))
+	print(num+1, len(OV_folder_list))
 	temp_proj_name=project_name+"_"+str(num)
  	#print((project_list[num]))
  	#print(type(project_list[num]))
 #	print(match[0])
-	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-	if Elastic:
-		transform =  transform_list[num]
+#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
+#	if Elastic:
+	transform =  transform_list[num]
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
  	#print(project)
  	#print([filenames_keys[0]], filenames_values[0])										
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
 	filenames_keys=file_sort(filenames_keys,0,True) #reorders them from right most to left most image
-	
+#	print(filenames_keys)
+#	print(filenames_values)
+	print(transform)
+	layerset=add_patch_v2(filenames_keys,filenames_values
+	, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num])
+	counter+=len(filenames_values[0])
+	counter_list.append(counter)
 	print("prepared tile order for best overlay")
+	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
 	#layerset=add_patch_andTransform([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0]), transform_folder=transform) #makes layers and adds images to them
 	#if len(filenames_keys) != 1: #don't need this if
-	if Elastic:
-		layerset=add_patch_andTransform(filenames_keys[0:], filenames_values[0:], project, 0, len(filenames_values[0]), transform_folder=transform)
-	if not Elastic:
-		print(filenames_keys[1:],filenames_values[1:], project, 0, 0)
-		layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0])) #makes layers and adds images to them
-		if len(filenames_keys) != 1: #don't need this if
-			layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0) #issue here where there is a project loaded with the same name
-	align_layers(model_index, octave_size, layerset, True) #could change number of threads
+#	if Elastic:
+#		layerset=add_patch_andTransform(filenames_keys[0:], filenames_values[0:], project, 0, len(filenames_values[0]), transform_folder=transform)
+#	if not Elastic:
+#		print(filenames_keys[1:],filenames_values[1:], project, 0, 0)
+#		layerset=add_patch([filenames_keys[0]], [filenames_values[0]], project, 0, len(filenames_values[0])) #makes layers and adds images to them
+#		if len(filenames_keys) != 1: #don't need this if
+#			layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0) #issue here where there is a project loaded with the same name
+#	align_layers(model_index, octave_size, layerset, True) #could change number of threads
 	layerset.setMinimumDimensions() 
  	
-	project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment
-	AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment
- 	
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment
+#align_layers(model_index, octave_size, layerset, True) #could change number of threads
+AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment
+
 	#print(sub_dir, temp_proj_name+"aligned")
-	layerset.setMinimumDimensions()
+layerset.setMinimumDimensions()
 
  	# if proj_folds:
  	# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False) #save project file final time, after z alignment
  	# else:
  	# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False)
- 	#exports images
-	mini_dir= make_dir(output_dir,  "export_"+str(num)) #makes output subdirectory
- 	#export_image(layerset, mini_dir, canvas_roi=True)#, processed=False) #exports image
-	exportProject(project, mini_dir)
-    
+# 	#exports images
+#	mini_dir= make_dir(output_dir,  "export_"+str(num)) #makes output subdirectory
+# 	#export_image(layerset, mini_dir, canvas_roi=True)#, processed=False) #exports image
+#	exportProject(project, mini_dir)
+mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
+exportProject(project, mini_dir,canvas_roi=True)
+mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
+exportProject(project, mini_dir,canvas_roi=True, processed=True)  
+      
 optionalCloseingAndDeleting(project,output_dir,project_name)
 
 print("Done!")

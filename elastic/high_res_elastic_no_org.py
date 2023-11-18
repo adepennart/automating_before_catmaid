@@ -199,6 +199,7 @@ for num in range(0,len(OV_folder_list)):
 	# sub_OV_folders=file_sort(sub_OV_folders, -1) #sort
 	# all_folder_list=folder_find(NO_folder_list[num],  windows, sub_OV_folders)
 	# all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
+    octave_increase = 0
     while 1:
         octave_size=(octave_size+200*octave_increase)
         temp_proj_name=project_name+"_"+str(num)
@@ -301,8 +302,8 @@ for num in range(0,len(OV_folder_list)):
 #print(file_keys_big_list)	
 #print(filenames_keys)
 print("initiall alignment test done")
-print(len(project_list), "amount of started projects")
-print(len(OV_folder_list), "amount of processed substacks")
+print(len(project_list)+1, "amount of started projects")
+print(len(OV_folder_list)+1, "amount of processed substacks")
 
 
 if test:	

@@ -410,17 +410,18 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
                         with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
                             for line in f:
                                 if re.findall("AffineModel2D", line): # makes directory
-                                    data_string=re.findall("data=\"[\d.\sE-]+", line) # makes directory
+                                    data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
 		                           #should only be one line in content
                                     numbers=data_string[0].replace("data=\"","")
 		#                           print(number[0].replace("data=\"",""))
-                                    numbers=re.findall("[\d.-E]+", numbers)
+                                    numbers=re.findall("[\d.\-E]+", numbers)
                                     new_x=str(float(numbers[4])/scaling_factor)
                                     new_y=str(float(numbers[5])/scaling_factor)
 		                    #would replace all instances, so safety measure needed?
+                                    print(data_string)
                                     new_data_string=data_string[0].replace(numbers[4],new_x)
                                     new_data_string=new_data_string.replace(numbers[5],new_y)
-		#                    print(new_data_string)
+                                    print(new_data_string)
                                     new_content=line.replace(data_string[0],new_data_string)
                                     f2.write(new_content)	
                                 else:
@@ -448,7 +449,9 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 #	                    transform_file=open(path_w_scaling,"w")
 #	                    transform_file.write(new_content)
 #	                    transform_file.close()
-                    transform = Transform_VS.readCoordinateTransform(path_w_scaling)
+                        transform = Transform_VS.readCoordinateTransform(path_w_scaling)
+                    if scaling_factor == 1:
+                        transform = Transform_VS.readCoordinateTransform(path)
 	            #print(filenames_values[n][i-start_lay])
 	            
 	            
