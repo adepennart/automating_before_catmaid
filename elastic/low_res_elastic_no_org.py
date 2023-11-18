@@ -397,7 +397,7 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
  	#print([filenames_keys[0]], filenames_values[0])										
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
-	filenames_keys=file_sort(filenames_keys,0,True) #reorders them from right most to left most image
+#	filenames_keys=file_sort(filenames_keys,0,True) #reorders them from right most to left most image
 #	print(filenames_keys)
 #	print(filenames_values)
 	print(transform)
