@@ -258,7 +258,8 @@ for num in range(0,len(OV_folder_list)):
 				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
 				#print(type(layerset),type(layerset_lowRes))
 #                roi, tiles, transforms, transform_XML =align_layers_elastic(param,model_index,layerset,True,octave_size)
-                roi, tiles, transforms, transform_XML =align_layers_elastic(param,model_index,layerset,False,octave_size)
+#                roi, tiles, transform_XML, transform_XML2 =align_layers_elastic(param,model_index,layerset,False,octave_size)
+                roi, tiles, transform_XML =align_layers_elastic(param,model_index,layerset,False,octave_size)
 				#Save XML files
                 transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
                 save_xml_files(transform_XML, transform_dir)
@@ -267,6 +268,7 @@ for num in range(0,len(OV_folder_list)):
 				#Do i need true in align_layers
 #                roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
                 roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
+                #transforms not needed
                 transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
                 save_xml_files(transform_XML, transform_dir)
                 transform_list.append(transform_dir)
@@ -489,14 +491,9 @@ mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True)
-# export_image(layerset, mini_dir, canvas_roi=True)#, processed=False)
-#	Saves the project without OV
 
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
-# else:
-# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
-#IJ.run("Close All")
-#	project.remove(False)
+
 optionalCloseingAndDeleting(project,output_dir,project_name)
 
 print("Done!")

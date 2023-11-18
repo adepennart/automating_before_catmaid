@@ -58,11 +58,11 @@ from ij import IJ, ImagePlus, plugin, WindowManager, ImageStack
 from ini.trakem2 import Project
 from ini.trakem2.display import Display, Patch, LayerSet
 from ini.trakem2.imaging import Blending
-from ij.io import FileSaver
 # for aligning/montaging
 from mpicbg.trakem2.align import Align, AlignTask, AlignLayersTask, ElasticMontage
 #from ini.trakem2.utils import Filter
 # for exporting
+from ij.io import FileSaver
 from java.awt import Color
 from mpicbg.ij.clahe import FastFlat, Flat
 # for gui
@@ -404,27 +404,50 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
                     xml_file= "image_stack_"+str(n+1)+".xml"
                     path=os.path.join(transform_folder,xml_file)
                     if scaling_factor != 1:
-	                    transform_file=open(path,"r")
-	                    content=transform_file.read()
-	                    print(content)
-	                    data_string=re.findall("data=\"[\d.\sE-]+", content) # makes directory
-	                    #should only be one line in content
-	                    numbers=data_string[0].replace("data=\"","")
-	#                    print(number[0].replace("data=\"",""))
-	                    numbers=re.findall("[\d.-E]+", numbers)
-	                    new_x=str(float(numbers[4])/scaling_factor)
-	                    new_y=str(float(numbers[5])/scaling_factor)
-	                    #would replace all instances, so safety measure needed?
-	                    new_data_string=data_string[0].replace(numbers[4],new_x)
-	                    new_data_string=new_data_string.replace(numbers[5],new_y)
-	#                    print(new_data_string)
-	                    new_content=content.replace(data_string[0],new_data_string)
-	                    print(new_content)
-	                    transform_file.close()
-	                    path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-	                    transform_file=open(path_w_scaling,"w")
-	                    transform_file.write(new_content)
-	                    transform_file.close()
+#	                    transform_file=open(path,"r")
+                        path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+                        transform_file=open(path_w_scaling,"w")
+                        with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+                            for line in f:
+                                if re.findall("AffineModel2D", line): # makes directory
+                                    data_string=re.findall("data=\"[\d.\sE-]+", line) # makes directory
+		                           #should only be one line in content
+                                    numbers=data_string[0].replace("data=\"","")
+		#                           print(number[0].replace("data=\"",""))
+                                    numbers=re.findall("[\d.-E]+", numbers)
+                                    new_x=str(float(numbers[4])/scaling_factor)
+                                    new_y=str(float(numbers[5])/scaling_factor)
+		                    #would replace all instances, so safety measure needed?
+                                    new_data_string=data_string[0].replace(numbers[4],new_x)
+                                    new_data_string=new_data_string.replace(numbers[5],new_y)
+		#                    print(new_data_string)
+                                    new_content=line.replace(data_string[0],new_data_string)
+                                    f2.write(new_content)	
+                                else:
+                                    f2.write(line)
+		                             
+#                            txt = f.read()
+#                            lines = txt.split('\n')
+#	                    content=transform_file.read()
+#	                    print(content)
+#	                    data_string=re.findall("data=\"[\d.\sE-]+", content) # makes directory
+#	                    #should only be one line in content
+#	                    numbers=data_string[0].replace("data=\"","")
+#	#                    print(number[0].replace("data=\"",""))
+#	                    numbers=re.findall("[\d.-E]+", numbers)
+#	                    new_x=str(float(numbers[4])/scaling_factor)
+#	                    new_y=str(float(numbers[5])/scaling_factor)
+#	                    #would replace all instances, so safety measure needed?
+#	                    new_data_string=data_string[0].replace(numbers[4],new_x)
+#	                    new_data_string=new_data_string.replace(numbers[5],new_y)
+#	#                    print(new_data_string)
+#	                    new_content=content.replace(data_string[0],new_data_string)
+#	                    print(new_content)
+#	                    transform_file.close()
+#	                    path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+#	                    transform_file=open(path_w_scaling,"w")
+#	                    transform_file.write(new_content)
+#	                    transform_file.close()
                     transform = Transform_VS.readCoordinateTransform(path_w_scaling)
 	            #print(filenames_values[n][i-start_lay])
 	            
@@ -1390,6 +1413,7 @@ def joinTilesElastic(param, tiles):
     # print(tiles)
     fixed=set(copy.copy([tiles[0:]])) 
     elasticMontage.exec(elasticParam, tiles, fixed)
+    
 
 
 def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
@@ -1427,7 +1451,10 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
             # for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
             # 	for m, tile_2 in enumerate(tiles[n:]):
             # 		tile.link(tile_2)
-        
+    transforms, transform_XML=get_patch_transform_data(layerset)
+    for n, layer in enumerate(layerset.getLayers()):
+        tiles = layer.getDisplayables(Patch)  # get  all tiles of layer
+#        remove_OV(layerset,0)
         joinTilesElastic(param, tiles)
         if OV_lock:  # could be optimzied here, as repeat,funciton could take in value instead of OV_lock
             # for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
@@ -1441,8 +1468,53 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
             roi = tiles[1].getBoundingBox()  # needed in OV alignment
             for tile in tiles[1:]:
                 roi.add(tile.getBoundingBox())
-    transforms, transform_XML=get_patch_transform_data(layerset)
-    return roi, tiles, transforms, transform_XML
+    transforms2, transform_XML2=get_patch_transform_data(layerset)
+    new_lines=""
+    transform_XML3=[]
+#    for n,xml in enumerate(transform_XML):
+#        print(xml)
+    for n,xml in enumerate(transform_XML2):
+        print(xml)
+        print("preelastic")
+        print(transform_XML[n])
+        lines = xml.split('\n')
+        for line in lines:
+#            print(line)
+            if re.findall("AffineModel2D", line): # makes directory
+               print("found affine")
+               new_line=transform_XML[n]
+               new_lines+="\t"+new_line+"\n"
+            else:
+               new_lines+=line+"\n"
+#        new_xml="\n".join(new_lines)
+        print("new")
+        print(new_lines)
+        transform_XML3.append(new_lines)
+        new_lines=""
+    print(transform_XML3)
+  
+        
+
+#    with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+#                            for line in f:
+#                                if re.findall("AffineModel2D", line): # makes directory
+#                                    data_string=re.findall("data=\"[\d.\sE-]+", line) # makes directory
+#		                           #should only be one line in content
+#                                    numbers=data_string[0].replace("data=\"","")
+#		#                           print(number[0].replace("data=\"",""))
+#                                    numbers=re.findall("[\d.-E]+", numbers)
+#                                    new_x=str(float(numbers[4])/scaling_factor)
+#                                    new_y=str(float(numbers[5])/scaling_factor)
+#		                    #would replace all instances, so safety measure needed?
+#                                    new_data_string=data_string[0].replace(numbers[4],new_x)
+#                                    new_data_string=new_data_string.replace(numbers[5],new_y)
+#		#                    print(new_data_string)
+#                                    new_content=line.replace(data_string[0],new_data_string)
+#                                    f2.write(new_content)	
+#                                else:
+#                                    f2.write(line)
+    return roi, tiles, transform_XML3
+    return roi, tiles, transform_XML, transform_XML2
 
 from loci.plugins import BF
 # def exportProject(project, export_directory):
