@@ -64,7 +64,7 @@ based off of Albert Cardona 2011-06-05 script
 #@ boolean (label = "run test(if OV has not been inverted)") test
 #@ boolean (label = "Elastic Alignment") Elastic
 #@ boolean (label = "Unorganized input") orgInput
-#@ boolean (label = "Crop") Crop
+##@ boolean (label = "Crop") Crop
 
 # import modules
 # ----------------------------------------------------------------------------------------
@@ -341,32 +341,48 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	# print(filenames_keys, filenames_values)
-	if test:
-		if inverted_image:
-			#print(roi_list, crop_roi_list)
-			output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num)) #makes inverted substack folder			
-			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3, 0) #inverts images
-			print(num,"of ",len(OV_folder_list),"substacks processed")
-			if len(filenames_keys) != 1 and Crop: #crops images if more than one image tile per layer if crop is choosen
-				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_"+project_name) #makes crop folder
-				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num)) #makes crop substack folder
-				# print(output_scaled, roi_list[num], crop_roi_list[num],assoc_roi_list[num])
-				filenames_keys, filenames_values = remove_area(filenames_keys, #crops overlap area
-																filenames_values, 
-																output_scaled, windows, 
-																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
-
-#		#crop image
-		elif not inverted_image and Crop: #crops overlap area without inverting
-			if len(filenames_keys) != 1:
-				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_"+project_name)
-				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
-				filenames_keys, filenames_values = remove_area(filenames_keys, 
-																filenames_values, 
-																output_scaled, windows, 
-																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
-
-				
+#	if test:
+	if inverted_image:
+		#print(roi_list, crop_roi_list)
+		output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num)) #makes inverted substack folder			
+		if num == 0:
+			if folder_find(output_inverted,windows):
+				inverted_subfolders=folder_find(output_inverted,windows)
+			#checks only first folder, but assuming sufficient
+				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
+					gui = GUI.newNonBlockingDialog("Overwrite?")
+					gui.addMessage(" Press ok to overwrite already inverted file?")#do i need to remove preexisting files
+					gui.showDialog()
+					if gui.wasOKed():
+						pass
+					#                    if windows:
+					#                        os.remove(sub_dir+"\\"+temp_proj_name+"test.xml")
+					#                    if not windows:
+					#                        os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
+					elif not gui.wasOKed():
+						sys.exit()
+		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3, 0) #inverts images
+		print(num,"of ",len(OV_folder_list),"substacks processed")
+#			if len(filenames_keys) != 1 and Crop: #crops images if more than one image tile per layer if crop is choosen
+#				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_2_"+project_name) #makes crop folder
+#				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num)) #makes crop substack folder
+#				# print(output_scaled, roi_list[num], crop_roi_list[num],assoc_roi_list[num])
+#				filenames_keys, filenames_values = remove_area(filenames_keys, #crops overlap area
+#																filenames_values, 
+#																output_scaled, windows, 
+#																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
+#
+##		#crop image
+#		elif not inverted_image and Crop: #crops overlap area without inverting
+#			if len(filenames_keys) != 1:
+#				large_OV_interim_2= make_dir(grand_joint_folder, "crop_interim_1_"+project_name)
+#				output_scaled=make_dir(large_OV_interim_2, "crop_substack"+str(num))
+#				filenames_keys, filenames_values = remove_area(filenames_keys, 
+#																filenames_values, 
+#																output_scaled, windows, 
+#																temp_proj_name, pattern_3, roi_list[num], crop_roi_list[num], assoc_roi_list[num])
+#
+#				
 	print("files potentially cropped and or inverted")
 #	print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
@@ -444,9 +460,9 @@ layerset.setMinimumDimensions()
 # 	#export_image(layerset, mini_dir, canvas_roi=True)#, processed=False) #exports image
 #	exportProject(project, mini_dir)
 mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
-exportProject(project, mini_dir,canvas_roi=True)
+exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
-exportProject(project, mini_dir,canvas_roi=True, processed=True)  
+exportProject(project, mini_dir,canvas_roi=True, processed=True) #,blend=True)
       
 optionalCloseingAndDeleting(project,output_dir,project_name)
 
