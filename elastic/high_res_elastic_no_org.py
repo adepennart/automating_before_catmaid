@@ -254,7 +254,7 @@ for num in range(0,len(OV_folder_list)):
 #            print(temp_filenames_keys_2, temp_filenames_values_2)
             print(temp_filenames_keys, temp_filenames_values)
             layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1) #creates layerset and adds images
-            scaling_number_list.append(scaling_number)
+#            scaling_number_list.append(scaling_number)
             if Elastic:
 				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
 				#print(type(layerset),type(layerset_lowRes))
@@ -262,27 +262,27 @@ for num in range(0,len(OV_folder_list)):
 #                roi, tiles, transform_XML, transform_XML2 =align_layers_elastic(param,model_index,layerset,False,octave_size)
                 roi, tiles, transform_XML =align_layers_elastic(param,model_index,layerset,False,octave_size)
 				#Save XML files
-                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-                save_xml_files(transform_XML, transform_dir)
-                transform_list.append(transform_dir)
+#                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+#                save_xml_files(transform_XML, transform_dir)
+#                transform_list.append(transform_dir)
             if not Elastic:
 				#Do i need true in align_layers
 #                roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
                 roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
                 #transforms not needed
-                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-                save_xml_files(transform_XML, transform_dir)
-                transform_list.append(transform_dir)
+#                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+#                save_xml_files(transform_XML, transform_dir)
+#                transform_list.append(transform_dir)
             # roi, tiles =align_layers(model_index, octave_size, layerset)  #aligns images
             project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
-            scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
-            scaling_number_file.write(str(scaling_number))
-            scaling_number_file.close()
+#            scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+#            scaling_number_file.write(str(scaling_number))
+#            scaling_number_file.close()
             layerset.setMinimumDimensions() #readjust canvas to only NO tiles
-            tiles_list.append(tiles)
-            roi_list.append(roi)
+#            tiles_list.append(tiles)
+#            roi_list.append(roi)
             #fix for windows
-            project_list.append(temp_proj_name+"test.xml")
+#            project_list.append(temp_proj_name+"test.xml")
             gui = GUI.newNonBlockingDialog("Aligned?")
             gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
     #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
@@ -290,6 +290,17 @@ for num in range(0,len(OV_folder_list)):
             if gui.wasOKed():
                 if num > 0:
                    project.remove(True)  
+#                project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
+                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+                save_xml_files(transform_XML, transform_dir)
+                transform_list.append(transform_dir)
+                scaling_number_list.append(scaling_number)
+                scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+                scaling_number_file.write(str(scaling_number))
+                scaling_number_file.close()
+                tiles_list.append(tiles)
+                roi_list.append(roi)
+                project_list.append(temp_proj_name+"test.xml")
                 break
             if not gui.wasOKed():
                 octave_increase+=1
@@ -400,21 +411,42 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	# print("this is before cropped")
-	if test:
-		if inverted_image:
-			#make list of filenammes keys and values for each project
-			output_inverted=make_dir(large_NO_interim, "high_res_interim"+str(num))
-			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
-			print(num,"of ",len(OV_folder_list),"substacks processed")
+#	if test:
+	if inverted_image:
+#		#make list of filenammes keys and values for each project
+		output_inverted=make_dir(large_NO_interim, "high_res_interim"+str(num))
+		if num == 0:
+			if folder_find(output_inverted,windows):
+				inverted_subfolders=folder_find(output_inverted,windows)
+			#checks only first folder, but assuming sufficient
+				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
+					gui = GUI.newNonBlockingDialog("Overwrite?")
+					gui.addMessage(" Press ok to overwrite already inverted file?")#do i need to remove preexisting files
+					gui.showDialog()
+					if gui.wasOKed():
+						pass
+					#                    if windows:
+					#                        os.remove(sub_dir+"\\"+temp_proj_name+"test.xml")
+					#                    if not windows:
+					#                        os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
+					elif not gui.wasOKed():
+						sys.exit()
+		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
+		print(num,"of ",len(OV_folder_list),"substacks processed")
 
-	        #resize image
-			if size != 1:
+        #resize image
+		if size != 1:
+			if test:
 				large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
 				output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
 				filenames_keys, filenames_values = resize_image(filenames_keys, 
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, size, roi_list[num])
+			if not test:
+				print("sys.exit() currently does not resize if not during test as needs roi of images from test")
+				sys.exit()
+																
 	print("files potentially cropped and or inverted")
 	# print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names

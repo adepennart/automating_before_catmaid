@@ -208,22 +208,22 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 														test_dir, windows, #output_dir --> test_dir this is just a test
 														temp_proj_name, inverted_image, size=True)	
 			layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)#creates layerset and adds images
-			scaling_number_list.append(scaling_number)
+#			scaling_number_list.append(scaling_number)
 			if Elastic:
 				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
 				#print(type(layerset),type(layerset_lowRes))
 				roi, tiles, transform_XML =align_layers_elastic(param, layerset,True,octave_size)
 				
 				#Save XML files
-				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))	
-				save_xml_files(transform_XML, transform_dir)
-				transform_list.append(transform_dir)
+#				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))	
+#				save_xml_files(transform_XML, transform_dir)
+#				transform_list.append(transform_dir)
 			if not Elastic:
 #				roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
 				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
-				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transform_dir)
-				transform_list.append(transform_dir)
+#				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+#				save_xml_files(transform_XML, transform_dir)
+#				transform_list.append(transform_dir)
 			layerset.setMinimumDimensions() #readjust canvas to minimum dimensions
 			# print(roi, tiles)
 		
@@ -239,11 +239,11 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 # 				assoc_roi_list.append(roi) #place holder variable
 # 			roi_list.append(roi)
 			project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)	#save test run						
-			scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
-			scaling_number_file.write(str(scaling_number))
-			scaling_number_file.close()
-			tiles_list.append(tiles)
-			project_list.append(temp_proj_name+"test.xml") #fix for windows
+#			scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+#			scaling_number_file.write(str(scaling_number))
+#			scaling_number_file.close()
+#			tiles_list.append(tiles)
+#			project_list.append(temp_proj_name+"test.xml") #fix for windows
 #			print(filenames_keys, filenames_values)
 			gui = GUI.newNonBlockingDialog("Aligned?")
 			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
@@ -251,7 +251,16 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			gui.showDialog()
 			if gui.wasOKed():
 				if num > 0:
-					project.remove(True)  
+					project.remove(True) 
+				scaling_number_list.append(scaling_number)
+				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+				save_xml_files(transform_XML, transform_dir)
+				transform_list.append(transform_dir)
+				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+				scaling_number_file.write(str(scaling_number))
+				scaling_number_file.close()
+				tiles_list.append(tiles)
+				project_list.append(temp_proj_name+"test.xml") #fix for windows 
 				break
 			if not gui.wasOKed():
 				octave_increase+=1
