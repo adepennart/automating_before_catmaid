@@ -5,6 +5,8 @@ A final script is needed for uploading images to catmaid(catmaid.py) after eithe
 
 Additional useful scripts are also present for use.
 
+example inputs and outputs are also provided.
+
 The scripts runs on ImageJ.
 
 
@@ -79,6 +81,8 @@ Unorganized input
 
 LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
+readme instructions in progress
+
 HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
@@ -129,3 +133,30 @@ ADD IMAGES...TRACKEM2, add images to layers of trakem2 project.
 EXPROT IMAGES...PROCESSED, specify whether you would like to export images as processed and unprocessed.
 
 IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or use the one and only project already loaded in trakem2.
+
+#### examples
+
+LOW RESOLUTION DIRECTORY, OV folder
+
+HIGH RESOLUTION DIRECTORY, No folder
+
+OUTPUT DIRECTORY, output folder
+
+PROJECT NAME, NO_test
+
+INVERT HR IMAGES, yes
+
+RESCALE OV FACTOR, 1
+
+OCTAVE_SIZE, maximum image size(px). 500
+
+MODEL_INDEX, translation
+
+USING A WINDOWS MACHINE, no (using mac)
+
+RUN TEST, yes
+
+ELASTIC ALIGNMENT, no
+
+UNORGANIZED INPUT,no
+
