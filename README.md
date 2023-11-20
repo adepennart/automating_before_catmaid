@@ -123,7 +123,6 @@ export images as unprocessed and processed"
 is project already loaded in trakem2 as only loaded project
 ```
 
-
 INPUT DIRECTORY, The directory with all the images to be aligned.
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
@@ -140,29 +139,21 @@ IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or us
 
 #### example
 
-Below is an example of the inputs needed for the high resolution script to get the outputs seen in the output folder. 
+Below is an example of the inputs needed for the high-resolution script to get the outputs seen in the output folder. 
 
-LOW RESOLUTION DIRECTORY, OV folder
+```
+low resolution directory: OV folder
+high resolution directory:  No folder
+Output directory: output folder
+project name: NO_test
+Invert HR images: √
+low resolution rescale factor: 1
+octave_size: 500
+Model_index: translation
+using a windows machine: unchecked (if not using mac)
+run test(if your low resolution has not been rescaled): √
+Elastic Alignment: unchecked
+Unorganized input: unchecked
+```
 
-HIGH RESOLUTION DIRECTORY, No folder
-
-OUTPUT DIRECTORY, output folder
-
-PROJECT NAME, NO_test
-
-INVERT HR IMAGES, yes
-
-RESCALE OV FACTOR, 1
-
-OCTAVE_SIZE, maximum image size(px). 500
-
-MODEL_INDEX, translation
-
-USING A WINDOWS MACHINE, no (using mac)
-
-RUN TEST, yes
-
-ELASTIC ALIGNMENT, no
-
-UNORGANIZED INPUT, no
 
