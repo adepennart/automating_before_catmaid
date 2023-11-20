@@ -33,7 +33,7 @@ Once the script is loaded, there is a 'Run' button on the bottom left. Pressing 
 
 Below you have the parameter menu given to you for low_res.py. 
 ```
-OV directory
+Input directory
 Output directory
 project name
 Invert images
@@ -41,6 +41,8 @@ octave_size
 Model_index
 using a windows machine
 run test(if OV has not been inverted)
+Elastic Alignment
+Unorganized input
 ```
 
 
@@ -59,6 +61,10 @@ MODEL_INDEX, choice of alignment between translation, rigid, similarity and affi
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
 RUN TEST(IF OV HAS NOT BEEN INVERTED) specify whether you would like to run a test to check if alignment will work.
+
+ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
+
+UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly organize files for alignment.
 
 #### high_res.py
 
@@ -80,8 +86,6 @@ Unorganized input
 ```
 
 LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
-
-readme instructions in progress
 
 HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
