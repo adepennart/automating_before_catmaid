@@ -111,7 +111,7 @@ UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly
 
 #### catmaid.py
 
-Below you have the parameter menu given to you for final_alignment.py. 
+Below you have the parameter menu given to you for catmaid.py. 
 
 ```
 Input directory
@@ -138,7 +138,9 @@ EXPROT IMAGES...PROCESSED, specify whether you would like to export images as pr
 
 IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or use the one and only project already loaded in trakem2.
 
-#### examples
+#### example
+
+Below is an example of the inputs needed for the high resolution script to get the outputs seen in the output folder. 
 
 LOW RESOLUTION DIRECTORY, OV folder
 
@@ -162,5 +164,5 @@ RUN TEST, yes
 
 ELASTIC ALIGNMENT, no
 
-UNORGANIZED INPUT,no
+UNORGANIZED INPUT, no
 
