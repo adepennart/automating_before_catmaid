@@ -46,7 +46,7 @@ Unorganized input
 ```
 
 
-OV DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
