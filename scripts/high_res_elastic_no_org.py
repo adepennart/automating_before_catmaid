@@ -68,12 +68,13 @@ loosely based off of Albert Cardona 2011-06-05 script
 #@ File (label = "high resolution directory", style = "directory") folder_2
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
-#@ boolean (label = "Invert HR images") inverted_image
+#@ boolean (label = "Invert high resolution images") inverted_image
 #@ int (label = "low resolution image rescale factor", default=4, min=0, max=10 ) size
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
 #@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
 #@ boolean (label = "using a windows machine") windows
-#@ boolean (label = "run test(if your low resolution has not been rescaled)") test
+#@ boolean (label = "script previously run (alignment parameter saved in file)") rerun
+##@ boolean (label = "run test(if your low resolution has not been rescaled)") test
 #@ boolean (label = "Elastic Alignment") Elastic
 #@ boolean (label = "Unorganized input") orgInput
 
@@ -180,11 +181,11 @@ else:
         # print(filenames_keys, filenames_values)
     print(filenames_keys_big, filenames_values_big)
 
-if test:
+if not rerun:
 	test_dir= make_dir(grand_joint_folder,  "test_0_"+project_name) #make test directory
 	test_dir_2= make_dir(grand_joint_folder,  "test_0_"+project_name+"_2") #make test directory
 proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make project directory
-transform_dir_big = make_dir(grand_joint_folder,"transform parameters") #make transform folder
+transform_dir_big = make_dir(grand_joint_folder,"transform_parameters_"+project_name) #make transform folder
 #large_OV_interim= make_dir(grand_joint_folder, "OV_interim")
 if inverted_image: 
 	large_NO_interim= make_dir(grand_joint_folder, "high_res_interim") #make inverted image directory
@@ -212,14 +213,14 @@ for num in range(0,len(OV_folder_list)):
         print(filenames_keys, filenames_values)
 	# filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
 	# print(filenames_keys, filenames_values)
-        if test:
+        if not rerun:
             dup_find(filenames_keys,filenames_values)
             #Creates a TrakEM2 project
             sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #make substack specific project folder
             file_list= os.listdir(sub_dir) # get list of all images in substack
             if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
                 gui = GUI.newNonBlockingDialog("Overwrite?")
-                gui.addMessage(" Press ok to overwrite project file?")
+                gui.addMessage(" Press ok to overwrite project file "+temp_proj_name+"test.xml in trakem2_files_"+project_name+"?\n Pressing cancel will exit the script.")
                 gui.showDialog()
                 if gui.wasOKed():
                     if windows:
@@ -305,7 +306,7 @@ for num in range(0,len(OV_folder_list)):
             if not gui.wasOKed():
                 octave_increase+=1
                 project.remove(True) 
-        if not test:
+        if rerun:
            break
     file_keys_big_list.append(filenames_keys)
     file_values_big_list.append(filenames_values)
@@ -317,7 +318,7 @@ print(len(project_list)+1, "amount of started projects")
 print(len(OV_folder_list)+1, "amount of processed substacks")
 
 
-if test:	
+if not rerun:	
  	#find max ROI
  	print(roi_list)
  	max_roi=max(roi_list)
@@ -421,7 +422,7 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 			#checks only first folder, but assuming sufficient
 				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
 					gui = GUI.newNonBlockingDialog("Overwrite?")
-					gui.addMessage(" Press ok to overwrite already inverted file?")#do i need to remove preexisting files
+					gui.addMessage(" Press ok to overwrite already inverted file in invert_interim_1"+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
 					gui.showDialog()
 					if gui.wasOKed():
 						pass
@@ -436,14 +437,14 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 
         #resize image
 		if size != 1:
-			if test:
+			if not rerun:
 				large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
 				output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
 				filenames_keys, filenames_values = resize_image(filenames_keys, 
 																filenames_values, 
 																output_scaled, windows, 
 																temp_proj_name, pattern_3, size, roi_list[num])
-			if not test:
+			if rerun:
 				print("sys.exit() currently does not resize if not during test as needs roi of images from test")
 				sys.exit()
 																
@@ -527,6 +528,6 @@ exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
 
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
 
-optionalCloseingAndDeleting(project,output_dir,project_name)
+optionalClosingAndDeleting(project,output_dir,project_name)
 
 print("Done!")

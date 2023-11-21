@@ -49,6 +49,9 @@ known error:
 	18. (right before actual alignment) issue here where there is a project loaded with the same name
 	19. can number of threads be changed durign alignment
 	20. don't need if statement when saving project after z alignment
+	21. haven't found option to not display "want to save/delete from database"
+	22. option to remove test files could be interesting
+	23. resize should be an option after test
 
 
     
@@ -61,7 +64,8 @@ based off of Albert Cardona 2011-06-05 script
 #@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
 #@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
 #@ boolean (label = "using a windows machine") windows
-#@ boolean (label = "run test(if OV has not been inverted)") test
+#@ boolean (label = "script previously run (alignment parameter saved in file)") rerun
+##@ boolean (label = "run test(if OV has not been inverted)") test
 #@ boolean (label = "Elastic Alignment") Elastic
 #@ boolean (label = "Unorganized input") orgInput
 ##@ boolean (label = "Crop") Crop
@@ -162,10 +166,10 @@ exe.scheduleAtFixedRate(releaseAll, 0, 60, TimeUnit.SECONDS)
 
 #main
 # --------------------------------------------------------------------------------------
-if test:
+if not rerun:
 	test_dir= make_dir(grand_joint_folder,  "test_0_"+project_name) #make test directory
 proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make project directory
-transform_dir_big = make_dir(grand_joint_folder,"transform parameters") #make transform folder
+transform_dir_big = make_dir(grand_joint_folder,"transform_parameters_"+project_name) #make transform folder
 if inverted_image: 
 	large_OV_interim= make_dir(grand_joint_folder, "invert_interim_1"+project_name) #make inverted image directory
 
@@ -184,14 +188,14 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			print("error-empty list of keys given")
 			break
 		print(filenames_keys, filenames_values)
-		if test:
+		if not rerun:
 			sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #make substack specific project folder
 			file_list= os.listdir(sub_dir) # get list of all images in substack
 #			print(file_list)
 #			print(temp_proj_name+"test")
 			if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
 				gui = GUI.newNonBlockingDialog("Overwrite?")
-				gui.addMessage(" Press ok to overwrite project file?")
+				gui.addMessage(" Press ok to overwrite project file "+temp_proj_name+"test.xml in trakem2_files_"+project_name+"?\n Pressing cancel will exit the script.")
 				gui.showDialog()
 				if gui.wasOKed():
 					if windows:
@@ -220,7 +224,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 #				transform_list.append(transform_dir)
 			if not Elastic:
 #				roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
-				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
+				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,True,True) #aligns images
 #				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
 #				save_xml_files(transform_XML, transform_dir)
 #				transform_list.append(transform_dir)
@@ -246,11 +250,12 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 #			project_list.append(temp_proj_name+"test.xml") #fix for windows
 #			print(filenames_keys, filenames_values)
 			gui = GUI.newNonBlockingDialog("Aligned?")
-			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
+			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not, pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
     #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 			gui.showDialog()
 			if gui.wasOKed():
 				if num > 0:
+					print("hey boi")
 					project.remove(True) 
 				scaling_number_list.append(scaling_number)
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
@@ -266,7 +271,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 				octave_increase+=1
 				project.remove(True) 
 
-		if not test:
+		if rerun:
 			break
 	file_keys_big_list.append(filenames_keys)
 	file_values_big_list.append(filenames_values)
@@ -351,7 +356,7 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 			#checks only first folder, but assuming sufficient
 				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
 					gui = GUI.newNonBlockingDialog("Overwrite?")
-					gui.addMessage(" Press ok to overwrite already inverted file?")#do i need to remove preexisting files
+					gui.addMessage(" Press ok to overwrite already inverted file in invert_interim_1"+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
 					gui.showDialog()
 					if gui.wasOKed():
 						pass
@@ -464,6 +469,6 @@ exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True) #,blend=True)
       
-optionalCloseingAndDeleting(project,output_dir,project_name)
+optionalClosingAndDeleting(project,output_dir,project_name)
 
 print("Done!")

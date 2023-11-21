@@ -601,16 +601,16 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
     for n, layer in enumerate(layerset.getLayers()):
         tiles = layer.getDisplayables(Patch)  # get all tiles
         layerset.setMinimumDimensions()  # readjust canvas size
-        if OV_lock:  # here we are linking each image to the previous image of the same stack
-            if n == 0:
-                old_tiles = tiles
-            if n > 0:
-                for n, old_tile in enumerate(old_tiles):
-                    for m, tile in enumerate(tiles):
-                        if n == m:
-                            old_tile.link(tile)
-                            break
-                    old_tiles = tiles
+#        if OV_lock:  # here we are linking each image to the previous image of the same stack
+#            if n == 0:
+#                old_tiles = tiles
+#            if n > 0:
+#                for n, old_tile in enumerate(old_tiles):
+#                    for m, tile in enumerate(tiles):
+#                        if n == m:
+#                            old_tile.link(tile)
+#                            break
+#                    old_tiles = tiles
                     # print(tile.isLinked())
         tiles[0].setLocked(True)  # lock the OV stack
         # i believe tihs is what they are looking for
@@ -1089,10 +1089,10 @@ def save_xml_files(xml_data_list, destination_directory):
         with open(destination_file_path, "w") as xml_file:
             xml_file.write(xml_data)
 
-def optionalCloseingAndDeleting(project, output_directory,project_name):
+def optionalClosingAndDeleting(project, output_directory,project_name):
     # Create a dialog box with Yes/No options as checkboxes
     gd = GenericDialog("Close Windows and Remove Interim Files")
-    gd.addMessage("You have used:" + str(IJ.currentMemory) + " of " + str(IJ.maxMemory))
+    gd.addMessage("Alignment finished. You have used:" + str(IJ.currentMemory) + " of " + str(IJ.maxMemory))
     gd.addCheckbox("Close all open windows", True)
     gd.addCheckbox("Remove all interim files", False)
     gd.showDialog()
@@ -1110,14 +1110,41 @@ def optionalCloseingAndDeleting(project, output_directory,project_name):
 
         if remove_interim_files:
             # Remove all interim file folders 
-            folders_to_delete = ["invert_interim_1"+project_name, "test_0_"+project_name,
-                                 "trakem2_files_"+project_name,"crop_interim_2_"+project_name,
-                                 "crop_interim_1_"+project_name]
+            #should we be more general? and include high res interim folders
+#            folders_to_delete = ["invert_interim_1"+project_name, "test_0_"+project_name,
+#                                 "trakem2_files_"+project_name,"crop_interim_2_"+project_name,
+#                                 "crop_interim_1_"+project_name,transform_parameters]
+#            interim_folders=folder_find(output_directory,windows)    
+            print(os.listdir(output_directory))
+                
+            interim_folders=filter(re.compile(".*"+re.escape(project_name)).match, os.listdir(output_directory))
+#            print(re.compile(".*high_elin").match)
+#            interim_folders=filter(re.compile(".*high_elin").match, os.listdir(output_directory))
+            print(interim_folders)
+#            interim_folders.remove(re.compile(".*high_elin").match)
+            export_files=filter(re.compile('.*export.*').match,interim_folders)
+            for exported in export_files:
+                interim_folders.remove(exported)
+            print(interim_folders)
+            str_interim_folders="\n-".join(interim_folders)
+#            if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
+            gui = GUI.newNonBlockingDialog("Overwrite?")
+            gui.addMessage(" Press ok to overwrite following interim files: \n-"+str_interim_folders)
+            gui.showDialog()
+            if gui.wasOKed():
+                for folder_name in interim_folders:
+                    if not re.findall("export", folder_name):
+                        folder_path = os.path.join(output_directory, folder_name)
+                        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                            delete_non_empty_folder(folder_path)
+            elif not gui.wasOKed():
+                pass
 
-            for folder_name in folders_to_delete:
-                folder_path = os.path.join(output_directory, folder_name)
-                if os.path.exists(folder_path) and os.path.isdir(folder_path):
-                    delete_non_empty_folder(folder_path)
+
+#            for folder_name in folders_to_delete:
+#                folder_path = os.path.join(output_directory, folder_name)
+#                if os.path.exists(folder_path) and os.path.isdir(folder_path):
+#                    delete_non_empty_folder(folder_path)
                     
 def delete_non_empty_folder(folder_path):
     try:
@@ -1294,7 +1321,8 @@ def get_scaling_factor(tiles):
     current_width = tiles.getWidth()
     current_height = tiles.getHeight()
     gd.addMessage("Current size: %d x %d" % (current_width, current_height))
-    gd.addNumericField("Rescaling Factor", 0.2, 2)  # Default rescaling factor of 0.5
+    gd.addNumericField("\tRescaling Factor", 0.2, 2)  # Default rescaling factor of 0.5
+    gd.addMessage("*Rescaling image smaller will speed up alignment test.")
     gd.showDialog()
 
     if gd.wasCanceled():
