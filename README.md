@@ -46,7 +46,7 @@ Unorganized input
 ```
 
 
-OV DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
@@ -69,7 +69,6 @@ UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly
 #### high_res.py
 
 Below you have the parameter menu given to you for high_res.py and further below the explanation for each parameter. 
-
 ```
 low resolution directory
 high resolution directory
