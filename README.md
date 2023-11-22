@@ -31,7 +31,7 @@ Once the script is loaded, there is a 'Run' button on the bottom left. Pressing 
 ### Input
 #### low_res.py
 
-Below you have the parameter menu given to you for low_res.py. 
+Below you have the parameter menu given to you for low_res.py and further below the explanation for each parameter. 
 ```
 Input directory
 Output directory
@@ -68,8 +68,7 @@ UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly
 
 #### high_res.py
 
-Below you have the parameter menu given to you for high_res.py. 
-
+Below you have the parameter menu given to you for high_res.py and further below the explanation for each parameter. 
 ```
 low resolution directory
 high resolution directory
