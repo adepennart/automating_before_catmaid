@@ -189,7 +189,7 @@ EXPROT IMAGES...PROCESSED, specify whether you would like to export images as pr
 
 IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or use the one and only project already loaded in trakem2.
 
-## example
+## Example
 
 Below is an example of the inputs needed for the high-resolution script to get the outputs seen in the output folder. 
 
