@@ -73,8 +73,18 @@ Unorganized input
 ```
 
 
-INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
-
+INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+```
+++------/input
++	+------/OV
++		+------/_1
++			+------/ov_z1_.tif
+++++++++++++++++++++++++++++++++++++++++++++++++++
+++------/input
++	+------/OV
++		+------/_2
++			+------/ov_z2_.tif
+```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
 PROJECT NAME, chosen name for your Trackem2 project.
@@ -111,10 +121,45 @@ Elastic Alignment
 Unorganized input
 ```
 
-LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
-
+LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+```
+++------/input
++	+------/OV
++		+------/_1
++			+------/ov_z1_.tif
+++++++++++++++++++++++++++++++++++++++++++++++++++
+++------/input
++	+------/OV
++		+------/_2
++			+------/ov_z2_.tif
+```
 HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+```
+++------/input
++	+------/NO
++		+------/z2
++			+------/_1
++				+------/no1_z2_.tif
 
++------/input
+	+------/NO
+		+------/z2
+			+------/_2
+				+------/no2_z2_.tif
+++++++++++++++++++++++++++++++++++++++++++++++++++
+++------/input
++	+------/NO
++		+------/z1
++			+------/_1
++				+------/no1_z1_.tif
+
++------/input
+	+------/NO
+		+------/z1
+			+------/_2
+				+------/no2_z1_.tif
+++++++++++++++++++++++++++++++++++++++++++++++++++
+```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
 PROJECT NAME, chosen name for your Trackem2 project.
