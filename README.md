@@ -79,9 +79,6 @@ INPUT DIRECTORY, The directory with all the images to be aligned. Image substack
 +	+------/OV
 +		+------/_1
 +			+------/ov_z1_.tif
-++++++++++++++++++++++++++++++++++++++++++++++++++
-++------/input
-+	+------/OV
 +		+------/_2
 +			+------/ov_z2_.tif
 ```
@@ -127,9 +124,6 @@ LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be
 +	+------/OV
 +		+------/_1
 +			+------/ov_z1_.tif
-++++++++++++++++++++++++++++++++++++++++++++++++++
-++------/input
-+	+------/OV
 +		+------/_2
 +			+------/ov_z2_.tif
 ```
@@ -137,27 +131,17 @@ HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to 
 ```
 ++------/input
 +	+------/NO
-+		+------/z2
-+			+------/_1
-+				+------/no1_z2_.tif
-
-+------/input
-	+------/NO
-		+------/z2
-			+------/_2
-				+------/no2_z2_.tif
-++++++++++++++++++++++++++++++++++++++++++++++++++
-++------/input
-+	+------/NO
 +		+------/z1
 +			+------/_1
 +				+------/no1_z1_.tif
-
-+------/input
-	+------/NO
-		+------/z1
 			+------/_2
 				+------/no2_z1_.tif
++		+------/z2
++			+------/_1
++				+------/no1_z2_.tif
+			+------/_2
+				+------/no2_z2_.tif
+
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 ```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
