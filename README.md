@@ -74,10 +74,22 @@ INPUT DIRECTORY, The directory with all the images to be aligned. Image substack
 ```
 ++------/input
 +	+------/OV
-+		+------/_1
-+			+------/ov_z1_.tif
-+		+------/_2
-+			+------/ov_z2_.tif
++		+------/OV1
++			+------/ov1_1_.tif
++			+------/ov1_2_.tif
++			+------[...]
++			+------/ov1_n_.tif
++		+------/OV2
++			+------/ov2_1_.tif
++			+------/ov2_2_.tif
++			+------[...]
++			+------/ov2_n_.tif
++		+------/[...]
++		+------/OVn
++			+------/ovn_1_.tif
++			+------/ovn_2_.tif
++			+------[...]
++			+------/ovn_n_.tif
 ```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
@@ -119,25 +131,79 @@ LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be
 ```
 ++------/input
 +	+------/OV
-+		+------/_1
-+			+------/ov_z1_.tif
-+		+------/_2
-+			+------/ov_z2_.tif
++		+------/OV1
++			+------/ov1_1_.tif
++			+------/ov1_2_.tif
++			+------[...]
++			+------/ov1_n_.tif
++		+------/OV2
++			+------/ov2_1_.tif
++			+------/ov2_2_.tif
++			+------[...]
++			+------/ov2_n_.tif
++		+------[...]
++		+------/OVn
++			+------/ovn_1_.tif
++			+------/ovn_2_.tif
++			+------[...]
++			+------/ovn_n_.tif
 ```
 HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
 ```
 ++------/input
 +	+------/NO
-+		+------/z1
-+			+------/_1
-+				+------/no1_z1_.tif
-			+------/_2
-				+------/no2_z1_.tif
-+		+------/z2
-+			+------/_1
-+				+------/no1_z2_.tif
-			+------/_2
-				+------/no2_z2_.tif
++		+------/NO1
++			+------/NO1_tile1
++				+------/no1_tile1_1_.tif
++				+------/no1_tile1_2_.tif
++				+------[...]
++				+------/no1_tile1_n_.tif
++			+------/NO1_tile2
++				+------/no1_tile2_1_.tif
++				+------/no1_tile2_2_.tif
++				+------[...]
++				+------/no1_tile2_n_.tif
++			+------[...]
++			+------/NO1_tilen
++				+------/no1_tilen_1_.tif
++				+------/no1_tilen_2_.tif
++				+------[...]
++				+------/no1_tilen_n_.tif
++		+------/NO2
++			+------/NO2_tile1
++				+------/no2_tile1_1_.tif
++				+------/no2_tile1_2_.tif
++				+------[...]
++				+------/no2_tile1_n_.tif
++			+------/NO2_tile2
++				+------/no2_tile2_1_.tif
++				+------/no2_tile2_2_.tif
++				+------[...]
++				+------/no2_tile2_n_.tif
++			+------[...]
++			+------/NO2_tilen
++				+------/non_tilen_1_.tif
++				+------/non_tilen_2_.tif
++				+------[...]
++				+------/no2_tilen_n_.tif
++		+------/[...]
++		+------/NOn
++			+------/NOn_tile1
++				+------/non_tile1_1_.tif
++				+------/non_tile1_2_.tif
++				+------[...]
++				+------/non_tile1_n_.tif
++			+------/NOn_tile2
++				+------/non_tile2_1_.tif
++				+------/non_tile2_2_.tif
++				+------[...]
++				+------/non_tile2_n_.tif
++			+------[...]
++			+------/NOn_tilen
++				+------/non_tilen_1_.tif
++				+------/non_tilen_2_.tif
++				+------[...]
++				+------/non_tilen_n_.tif
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 ```
