@@ -69,8 +69,8 @@ loosely based off of Albert Cardona 2011-06-05 script
 #@ File (label = "Output directory", style = "directory") output_dir
 #@ String (label = "project name") project_name
 #@ boolean (label = "Invert high resolution images") inverted_image
-#@ int (label = "low resolution image rescale factor", default=4, min=0, max=10 ) size
-#@ int (label = "octave_size", default=800, min=0, max=1500 ) octave_size
+#@ float (label = "low resolution image rescale factor", default=4, min=0, max=10 ) size
+#@ float (label = "octave_size", default=800, min=0, max=1500 ) octave_size
 #@ String(choices={"translation", "rigid", "similarity", "affine"}, style="list") model_index
 #@ boolean (label = "using a windows machine") windows
 #@ boolean (label = "script previously run (alignment parameter saved in file)") rerun
