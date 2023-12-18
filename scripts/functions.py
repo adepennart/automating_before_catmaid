@@ -845,8 +845,8 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
     imp = imp.crop("stack")  # crop image to new roi
     old_dim = imp.getDimensions()
     # change image dimensions by specified factor
-    width = int(imp.getDimensions()[0]*size)
-    height = int(imp.getDimensions()[1]*size)
+    width = imp.getDimensions()[0]*size
+    height = imp.getDimensions()[1]*size
     # resize images
     # resize image to changed image dimensions
     imp = imp.resize(width, height, "none")
