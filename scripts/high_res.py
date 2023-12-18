@@ -436,17 +436,17 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 		print(num,"of ",len(OV_folder_list),"substacks processed")
 
         #resize image
-		if size != 1:
-			if not rerun:
-				large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
-				output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
-				filenames_keys, filenames_values = resize_image(filenames_keys, 
-																filenames_values, 
-																output_scaled, windows, 
-																temp_proj_name, pattern_3, size, roi_list[num])
-			if rerun:
-				print("sys.exit() currently does not resize if not during test as needs roi of images from test")
-				sys.exit()
+	if size != 1:
+		if not rerun:
+			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
+			output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
+			filenames_keys, filenames_values = resize_image(filenames_keys, 
+															filenames_values, 
+															output_scaled, windows, 
+															temp_proj_name, pattern_3, size, roi_list[num])
+		if rerun:
+			print("sys.exit() currently does not resize if not during test as needs roi of images from test")
+			sys.exit()
 																
 	print("files potentially cropped and or inverted")
 	# print(filenames_keys, filenames_values)
