@@ -73,11 +73,16 @@ from ij.gui import GUI
 from java.lang import Runtime
 from java.util.concurrent import Executors, TimeUnit
 
-# align
+
+# align 
 from ini.trakem2.utils import Filter
 
 import copy
 
+#boundingbox
+from mpicbg.spim.data.generic.base import XmlIoSingleton#XmlIoBoundingBoxes
+from spim.fiji.spimdata.boundingbox import XmlIoBoundingBoxes 
+from spim.fiji.spimdata.boundingbox import BoundingBoxes
 # func: flushes image cache
 
 
@@ -461,11 +466,11 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 #                                    	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))/scaling_factor)
 #                                    	new_y=str((float(numbers[5])-int(float(first_numbers[5])))/scaling_factor)
 	                    #would replace all instances, so safety measure needed?
-                                print(roi)
-                                print(data_string)
+#                                print(roi)
+#                                print(data_string)
                                 new_data_string=data_string[0].replace(numbers[4],new_x)
                                 new_data_string=new_data_string.replace(numbers[5],new_y)
-                                print(new_data_string)
+#                                print(new_data_string)
                                 new_content=line.replace(data_string[0],new_data_string)
                                 f2.write(new_content)	
                             else:
@@ -685,15 +690,15 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
             roi = roi_list
         if not OV_lock:  # roi for each stack of images is collected
 #            roi = tiles[1].getBoundingBox()  # needed in OV alignment
-            print(roi,"before")
+#            print(roi,"before")
 #            print(tiles[1].getBoundingBox())
             for n, tile in enumerate(tiles[1:]):
                 if n == 0:
                 	roi = tile.getBoundingBox()  # needed in OV alignment	
                 else:
 	                roi.add(tile.getBoundingBox())
-                print(tile.getBoundingBox())
-            print(roi,"after")
+#                print(tile.getBoundingBox())
+#            print(roi,"after")
         if transform:
 	        transforms, transform_XML=get_patch_transform_data(layerset)
 	        return  roi, tiles, transforms, transform_XML
@@ -886,7 +891,7 @@ def overlap_area(ROI=None):
 
 
 def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, size=None, roi=None):  # layerset=None, project=None
-    print(filenames_keys, filenames_values, joint_folder, windows, project_name, pattern, size, roi)
+#    print(filenames_keys, filenames_values, joint_folder, windows, project_name, pattern, size, roi)
     
     imp = plugin.FolderOpener.open(
         filenames_keys[0], "virtual")  # open image stack
@@ -1174,21 +1179,21 @@ def optionalClosingAndDeleting(project, output_directory,project_name):
 #                                 "trakem2_files_"+project_name,"crop_interim_2_"+project_name,
 #                                 "crop_interim_1_"+project_name,transform_parameters]
 #            interim_folders=folder_find(output_directory,windows)    
-            print(os.listdir(output_directory))
+#            print(os.listdir(output_directory))
                 
             interim_folders=filter(re.compile(".*"+re.escape(project_name)).match, os.listdir(output_directory))
 #            print(re.compile(".*high_elin").match)
 #            interim_folders=filter(re.compile(".*high_elin").match, os.listdir(output_directory))
-            print(interim_folders)
+#            print(interim_folders)
 #            interim_folders.remove(re.compile(".*high_elin").match)
             export_files=filter(re.compile('.*export.*').match,interim_folders)
             for exported in export_files:
                 interim_folders.remove(exported)
-            print(interim_folders)
+#            print(interim_folders)
             str_interim_folders="\n-".join(interim_folders)
 #            if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
-            gui = GUI.newNonBlockingDialog("Overwrite?")
-            gui.addMessage(" Press ok to overwrite following interim files: \n-"+str_interim_folders)
+            gui = GUI.newNonBlockingDialog("Delete?")
+            gui.addMessage(" Press ok to delete following interim files: \n-"+str_interim_folders)
             gui.showDialog()
             if gui.wasOKed():
                 for folder_name in interim_folders:
@@ -1330,7 +1335,7 @@ def get_patch_transform_data(layerset):
         for n, tile in enumerate(tiles):
             # Get the transformation for the tile
             transform = tile.getFullCoordinateTransform()
-            print(transform)
+#            print(transform)
             # Store the transformation data for the tile
             transformation_data[n] = transform
             transformation_files.append(transform.toXML(""))
@@ -1564,9 +1569,9 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
 #    for n,xml in enumerate(transform_XML):
 #        print(xml)
     for n,xml in enumerate(transform_XML2):
-        print(xml)
+#        print(xml)
         print("preelastic")
-        print(transform_XML[n])
+#        print(transform_XML[n])
         lines = xml.split('\n')
         for line in lines:
 #            print(line)
@@ -1577,11 +1582,11 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
             else:
                new_lines+=line+"\n"
 #        new_xml="\n".join(new_lines)
-        print("new")
-        print(new_lines)
+#        print("new")
+#        print(new_lines)
         transform_XML3.append(new_lines)
         new_lines=""
-    print(transform_XML3)
+#    print(transform_XML3)
   
         
 
@@ -1955,7 +1960,7 @@ def get_file_paths_folders(folder_path):
 
 def add_patch_UNORG(filenames_values=None, project=None, start_lay=None, tot_lay=None): #layerset=None,
     layerset = project.getRootLayerSet()#get the layerset
-    print(len(filenames_values))
+#    print(len(filenames_values))
     for i in range(start_lay,tot_lay):#add to the layerset the desired amount of layers 
         layerset.getLayer(i, 1, True)
     for i ,layer in enumerate(layerset.getLayers()): #add images to each layer
