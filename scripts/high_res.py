@@ -167,12 +167,12 @@ else:
     NO_folder_list=file_sort(NO_folder_list, -1) #sort
 #    print(OV_folder_list,NO_folder_list)
     for num in range(0,len(OV_folder_list)):
-        # temp_proj_name=project_name+"_"+str(num)
-        # joint_folder=mut_fold(OV_folder_list[num],NO_folder_list[num],windows)  #find tile directories for each substack
+        
+        
         sub_OV_folders=folder_find(OV_folder_list[num], windows) #find tile directories for each substack
         sub_OV_folders=file_sort(sub_OV_folders, -1) #sort
         all_folder_list=folder_find(NO_folder_list[num],  windows, sub_OV_folders)
-        # all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
+        
 #        print(all_folder_list)
         filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
         filenames_keys_big.append(filenames_keys)
@@ -186,7 +186,7 @@ if not rerun:
 	test_dir_2= make_dir(grand_joint_folder,  "test_0_"+project_name+"_2") #make test directory
 proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make project directory
 transform_dir_big = make_dir(grand_joint_folder,"transform_parameters_"+project_name) #make transform folder
-#large_OV_interim= make_dir(grand_joint_folder, "OV_interim")
+
 if inverted_image: 
 	large_NO_interim= make_dir(grand_joint_folder, "high_res_interim_"+project_name) #make inverted image directory
 	
@@ -194,12 +194,7 @@ if len(OV_folder_list) != len(NO_folder_list):
 	sys.exit("need same folder number for low and high res" ) #find files and paths and test alignment for each substack
 	
 for num in range(0,len(OV_folder_list)):
-	# temp_proj_name=project_name+"_"+str(num)
-	# joint_folder=mut_fold(OV_folder_list[num],NO_folder_list[num],windows)  #find tile directories for each substack
-	# sub_OV_folders=folder_find(OV_folder_list[num], windows) #find tile directories for each substack
-	# sub_OV_folders=file_sort(sub_OV_folders, -1) #sort
-	# all_folder_list=folder_find(NO_folder_list[num],  windows, sub_OV_folders)
-	# all_folder_list=folder_find(NO_folder_list[num],  windows, OV_folder_list[num])
+
     octave_increase = 0
     while 1:
         octave_size=(octave_size+200*octave_increase)
@@ -211,7 +206,6 @@ for num in range(0,len(OV_folder_list)):
             print("error-empty list of keys given")
             break
 #        print(filenames_keys, filenames_values)
-	# filenames_keys, filenames_values=file_find(all_folder_list, pattern_1, pattern_3)
 	# print(filenames_keys, filenames_values)
         if not rerun:
             dup_find(filenames_keys,filenames_values)
@@ -246,61 +240,38 @@ for num in range(0,len(OV_folder_list)):
 														temp_filenames_values, 
 														test_dir_2, windows, #output_dir --> test_dir this is just a test
 														temp_proj_name, invert_image=False, size=True)	
-#            temp_filenames_keys_2,temp_filenames_values_2 = prep_test_align_viggo(temp_filenames_keys[1:], 
-#                                                        temp_filenames_values[1:], 
-#														test_dir_2, windows, #output_dir --> test_dir this is just a test
-#														temp_proj_name, invert_image=True, size=True)	
-#            temp_filenames_keys_2 = [temp_filenames_keys[0]]+temp_filenames_keys_2
-#            temp_filenames_values_2 =	[temp_filenames_values[0]]+temp_filenames_values_2																													
+																												
 #            print(temp_filenames_keys_2, temp_filenames_values_2)
 #            print(temp_filenames_keys, temp_filenames_values)
             layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1) #creates layerset and adds images
-#            scaling_number_list.append(scaling_number)
             if Elastic:
-				#layerset_lowRes, scaling_factors=scale_image(layerset) #lowering the resolution for elastic alignment #TODO add scaling factor that increases i not alligned properly
+				
 				#print(type(layerset),type(layerset_lowRes))
-#                roi, tiles, transforms, transform_XML =align_layers_elastic(param,model_index,layerset,True,octave_size)
-#                roi, tiles, transform_XML, transform_XML2 =align_layers_elastic(param,model_index,layerset,False,octave_size)
+
                 roi, tiles, transform_XML =align_layers_elastic(param,model_index,layerset,False,octave_size)
 				#Save XML files
-#                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-#                save_xml_files(transform_XML, transform_dir)
-#                transform_list.append(transform_dir)
             if not Elastic:
-				#Do i need true in align_layers
-#                roi, tiles =align_layers(model_index, octave_size, layerset,True) #aligns images
                 roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,None,True) #aligns images
-                #transforms not needed
-#                transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-#                save_xml_files(transform_XML, transform_dir)
-#                transform_list.append(transform_dir)
-            # roi, tiles =align_layers(model_index, octave_size, layerset)  #aligns images
+               
             project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
-#            scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
-#            scaling_number_file.write(str(scaling_number))
-#            scaling_number_file.close()
+
             layerset.setMinimumDimensions() #readjust canvas to only NO tiles
-#            tiles_list.append(tiles)
-#            roi_list.append(roi)
-            #fix for windows
-#            project_list.append(temp_proj_name+"test.xml")
+
             gui = GUI.newNonBlockingDialog("Aligned?")
             gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
-    #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
             gui.showDialog()
             if gui.wasOKed():
                 if num > 0:
                    project.remove(True)  
-#                project.saveAs(os.path.join(proj_dir, temp_proj_name+"test"), False)
                 transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
                 save_xml_files(transform_XML, transform_dir)
                 transform_list.append(transform_dir)
-                scaling_number_list.append(scaling_number)
+                scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
                 scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
                 scaling_number_file.write(str(scaling_number))
                 scaling_number_file.close()
                 tiles_list.append(tiles)
-                roi.x=int(roi.x*(1/scaling_number))
+                roi.x=int(roi.x*(1/scaling_number))#adjust roi to the appropriate scaling number, this can be put under functions
                 roi.y=int(roi.y*(1/scaling_number))
                 roi.width=int(roi.width*(1/scaling_number))
                 roi.height=int(roi.height*(1/scaling_number))
@@ -323,47 +294,17 @@ print(len(OV_folder_list)+1, "amount of processed substacks")
 
 
 if not rerun:	
- 	#find max ROI
-#	print(roi_list)
-#	max_roi=max(roi_list)
-#	print(max_roi)
-	tot_roi = roi_list[0]  # needed in OV alignment
+	tot_roi = roi_list[0]  # roi of all the roi from each substack
 	for big_tile in roi_list[1:]:
 		tot_roi.add(big_tile)
 # 	print(tot_roi)
- 	#saves itin first transform folder
+ 	#saves it in first transform folder
  	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
 	transform_folds=file_sort(transform_folds, -1) 
  	transform_dir=transform_folds[0]
-# 	bounding=BoundingBoxes().addBoundingBox(tot_roi)
-# 	print(bounding)
-# 	xmled=XmlIoBoundingBoxes().toXml(tot_roi)#.boundingBoxToXml(tot_roi)
-# 	print(xml)
- 	roi_number_file=open(os.path.join(transform_dir, str(1)+"_roi.xml"),"w")
+ 	roi_number_file=open(os.path.join(transform_dir, str(1)+"_roi.xml"),"w") #makes a file with roi, add to function 
  	roi_number_file.write(str(tot_roi))
  	roi_number_file.close()
-# 	#potential gui
-# 	while 1: #increases maximum image size parameters by 200 if the images did not align
-# 		gui = GUI.newNonBlockingDialog("Aligned?")
-# 		gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
-# 		gui.showDialog()
-# 		if gui.wasOKed():
-# #			for num in range(0,len(OV_folder_list)):
-# #				project = Project.getProject(project_list[num])
-# #				project.remove(False)
-# #				project.removeProjectThing(layerset,False, True,1)
-# 			break
-# 		else:
-# 			roi_list=[]
-# 			octave_size=octave_size+200
-# 			for num in range(0,len(OV_folder_list)):
-# 				project = Project.getProject(project_list[num]) #assumes that there are no other projects open
-# 				roi, tiles =align_layers(model_index, octave_size, layerset)
-# 				roi_list.append(roi)
-# 				tiles_list.append(tiles)
-# 	print(roi_list)
-# 	#max_roi=max(roi_list)
-# 	#print(max_roi)
 
 try: #if not running test opens up previous test project file, clunky way deciding between test mode or not
 	project_list[0]
@@ -381,22 +322,17 @@ except IndexError:
 		for projected in projects: # finds test project file if open in trakem2 
 			if (xml_file[0].split("."))[0] in str(projected):
 				project = Project.getProject(projected)
-	        # if (xml_file[0].split("."))[0] in str(proj):
-			# 	project = Project.getProject(proj)
 				break
 		if not project:
 			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
 		project=''
-	# project_list=file_sort(project_list)
-	# print(project_list)
+	#load in scaling factor and roi file	
 	for n, transformed in enumerate(transform_folds):#find out why only one scaling_file comes
 #		print(transformed)
 		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
-#		transform_files=filter(re.compile("image_stack_\d+.xml").match, os.listdir(transformed))
 #		print(scaling_file, transformed)
 		transform_list.append(transformed)
-#		transform_list.append(transform_files)
 		path=os.path.join(transformed,scaling_file[0])
 #		print(os.path.isfile(path))
 		with open(path, 'r+') as f:
@@ -405,17 +341,15 @@ except IndexError:
 		       scaling_number_list.append(float(line))
 #        print(scaling_number_list)
 		if n == 0 :
-			roi_file=filter(re.compile("1_roi.xml").match, os.listdir(transformed))
+			roi_file=filter(re.compile("1_roi.xml").match, os.listdir(transformed))#only one roi, as it is total roi
 			path=os.path.join(transformed,roi_file[0])
-#			tot_roi=ReconstructArea().getGeneralPath(path)# .add(path) 
-#			XmlIoBoundingBoxes().boundingBoxToXml()
 			with open(path, 'r+') as f:
 				for line in f :
 #		      		 print(line)
 					file_roi=line
 			project = Project.getProject(project_list[0]) #selects appropriate project for image substack
 			layerset = project.getRootLayerSet()
-			for n, layer in enumerate(layerset.getLayers()):
+			for n, layer in enumerate(layerset.getLayers()):#this step isa work around to get a roi object 
 	  			if n == 0:
 	  				tiles = layer.getDisplayables(Patch)
 					old_roi=tiles[0].getBoundingBox()
@@ -423,7 +357,7 @@ except IndexError:
 					break
 			roi_values=re.findall("(\d+)", file_roi)
 #			print(roi_values)
-			old_roi.x=int(roi_values[0])
+			old_roi.x=int(roi_values[0])#with roi object fill in right values
 			old_roi.y=int(roi_values[1])
 			old_roi.width=int(roi_values[2])
 			old_roi.height=int(roi_values[3])
@@ -436,22 +370,8 @@ except IndexError:
 IJ.run("Close All")
 
 #changed to len(projec_list) since OV_folder_list doesnt accounnt fro the empty substack
-for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cropped and, if necessary, inverted. 
-# for num in range(0,len(OV_folder_list)):
-#	temp_proj_name=project_name+"_"+str(num)
-#	print(file_keys_big_list)
-	# print(type(project_list[num]))
-#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #makes a directory for this project if not already done
-#	# print(project)
-#	try: #removes images present from the test trakem2 project
-#		remove_tiles(tiles_list[num])
-#	except IndexError:
-#		# print(project)
-#		layerset = project.getRootLayerSet()
-#		for layer in layerset.getLayers():
-#		  	tiles = layer.getDisplayables(Patch)
-#			remove_tiles(tiles)
+ #this is for adjusting images to be cropped and, if necessary, inverted.
+for num in range(0,len(OV_folder_list)): #check if inverted files exist already 
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	# print("this is before cropped")
@@ -469,15 +389,10 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 					gui.showDialog()
 					if gui.wasOKed():
 						pass
-					#                    if windows:
-					#                        os.remove(sub_dir+"\\"+temp_proj_name+"test.xml")
-					#                    if not windows:
-					#                        os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
 					elif not gui.wasOKed():
 						sys.exit()
 
-	if size != 1:
-#		if not rerun:
+	if size != 1:  #check if inverted files exist already 
 			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim_"+project_name)
 			output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
 			if num == 0:
@@ -496,22 +411,16 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 						#                        os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
 						elif not gui.wasOKed():
 							sys.exit()
-#		if rerun:
-#			print("sys.exit() currently does not resize if not during test as needs roi of images from test")
-#			sys.exit()
-	if inverted_image:
+
+	if inverted_image: #invert images
 		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
 
     #resize image
 	if size != 1:
 		if not rerun:
-#			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
-#			output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
 			filenames_keys, filenames_values = resize_image(filenames_keys, 
 															filenames_values, 
 															output_scaled, windows, 
-#															temp_proj_name, pattern_3, size, roi_list[num])
-#															temp_proj_name, pattern_3, size, max_roi)
 															temp_proj_name, pattern_3, size, tot_roi)
 															
 																
@@ -520,7 +429,7 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
 
-counter=0
+counter=0 #counter in place as all substacks added into same project, counter determines where last substack ended off
 counter_list=[counter]
 temp_proj_name=project_name+"_"+str(0)
 project = Project.getProject(project_list[0]) #selects appropriate project for image substack
@@ -534,52 +443,19 @@ except IndexError:
 	  	tiles = layer.getDisplayables(Patch)
 		remove_tiles(tiles)
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
-#	temp_proj_name=project_name+"_"+str(num)
-#	project = Project.getProject(project_list[0]) #selects appropriate project for image substack
-#	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for this project if not already done
-#	try: #removes images present from the test trakem2 project
-#		remove_tiles(tiles_list[0])
-#	except IndexError:
-#		# print(project)
-#		layerset = project.getRootLayerSet()
-#		for layer in layerset.getLayers():
-#		  	tiles = layer.getDisplayables(Patch)
-#			remove_tiles(tiles)
-#	project = Project.getProject(project_list[num]) #selects appropriate project for image substack
-#	if Elastic:
-#	   transform =  transform_list[num]
 	transform =  transform_list[num]
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
-#	print(filenames_keys)
-#	print("here")
-#	print(filenames_values)
-#	print(transform, scaling_number_list[num])
-#for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
-	#print(counter)
 	layerset=add_patch_v2(filenames_keys,filenames_values
 	, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num],size,tot_roi)
 	
 	counter+=len(filenames_values[0])
 	counter_list.append(counter)
-#	if num == 1:
-#		sys.exit()
-    #add stack to trakem2	
-	#fix add_patch	
 	print("prepared tile order for best overlay")
 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
-#	layerset=add_patch(filenames_keys, filenames_values, project, 1, len(filenames_values[0]))												
-#	if Elastic:
-#		layerset=add_patch_andTransform(filenames_keys[0:], filenames_values[0:], project, 0, len(filenames_values[0]), transform_folder=transform)
-#	if not Elastic:
-#		layerset=add_patch(filenames_keys, filenames_values, project, 0, len(filenames_values[0]))
-	#align high to low res image 
-	# align_layers(model_index, octave_size, layerset)
-#	align_layers(model_index, octave_size, layerset, True) #could change number of threads
-#align_layers(model_index, octave_size, layerset) #could change number of threads
-#	Saves the project with OV
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment 	
+#following allows for little corrections in alingment, can probably just be translate, also be putin function
 param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index -
                                         1, correspondenceWeight=0.3)  # which extends Align.Param
 param.sift.maxOctaveSize = 600
@@ -595,10 +471,6 @@ for n, layer in enumerate(layerset.getLayers()):
             False)
 #projects only saved in first trackem2 folder
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"re_aligned"), False) #save project file before z alignment 	            
-# if proj_folds:
-# 	project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"with_low_res"), False)
-# else:
-# 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"with_low_res"), False)
 #removes the OV tile
 layerset.setMinimumDimensions() #readjust canvas to only high res tiles
 #remove OV from layers
