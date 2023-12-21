@@ -392,8 +392,7 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 #	layerset:
 #		all layers in trakem2 project
 
-
-def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None,transform_folder=None,scaling_factor=1):  # layerset=None,
+def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None,transform_folder=None,scaling_factor=1,size=1,roi=None):  # layerset=None,
     layerset = project.getRootLayerSet()  # get the layerset
     for i in range(start_lay, tot_lay):  # add to the layerset the desired amount of layers
         layerset.getLayer(i, 1, True)
@@ -403,30 +402,75 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
                 if transform_folder:
                     xml_file= "image_stack_"+str(n+1)+".xml"
                     path=os.path.join(transform_folder,xml_file)
-                    if scaling_factor != 1:
+#                    if scaling_factor != 1:
 #	                    transform_file=open(path,"r")
-                        path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-                        transform_file=open(path_w_scaling,"w")
-                        with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
-                            for line in f:
-                                if re.findall("AffineModel2D", line): # makes directory
-                                    data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
-		                           #should only be one line in content
-                                    numbers=data_string[0].replace("data=\"","")
-		#                           print(number[0].replace("data=\"",""))
-                                    numbers=re.findall("[\d.\-E]+", numbers)
-                                    new_x=str(float(numbers[4])/scaling_factor)
-                                    new_y=str(float(numbers[5])/scaling_factor)
-		                    #would replace all instances, so safety measure needed?
-                                    print(data_string)
-                                    new_data_string=data_string[0].replace(numbers[4],new_x)
-                                    new_data_string=new_data_string.replace(numbers[5],new_y)
-                                    print(new_data_string)
-                                    new_content=line.replace(data_string[0],new_data_string)
-                                    f2.write(new_content)	
-                                else:
-                                    f2.write(line)
-		                             
+                    path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+                    transform_file=open(path_w_scaling,"w")
+                    with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+                        for line in f:
+                            if re.findall("AffineModel2D", line): # makes directory
+                                data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
+	                           #should only be one line in content
+                                numbers=data_string[0].replace("data=\"","")
+	#                           print(number[0].replace("data=\"",""))
+                                numbers=re.findall("[\d.\-E]+", numbers)
+                                if n == 0:
+                                	new_x=str(float(numbers[4])/scaling_factor)
+                                	new_y=str(float(numbers[5])/scaling_factor)
+                                elif n == 1:
+#                                    	new_x=str(float(numbers[4])+100)
+#                                    	new_y=str(float(numbers[5]))
+#                                    	new_x=str(484.0000000000000)
+#                                    	new_y=str(208.0000000000000)
+#                                    	new_x=str((float(numbers[4])-int(float(numbers[4]))+100))
+#                                    	new_y=str((float(numbers[5])-int(float(numbers[5]))))
+  
+#                                	new_x=str((float(numbers[4])-int(float(numbers[4]))))#/scaling_factor)
+#                                	new_y=str((float(numbers[5])-int(float(numbers[5]))))#/scaling_factor)
+                                	new_x=str(((int(float(numbers[4])))*size/scaling_factor)-roi.x*size)#/scaling_factor)
+                                	new_y=str(((int(float(numbers[5])))*size/scaling_factor)-roi.y*size)
+#                                    	new_x=str(int(float(numbers[4]))*5/4)#/scaling_factor)
+#                                    	new_y=str(int(float(numbers[5]))*5/4)
+#                                    	new_x=numbers[4]
+#                                    	new_y=numbers[5]
+                                	first_numbers=numbers
+                                	first_x=new_x
+                                	first_y=new_y
+                                elif n > 1:
+#                                    	new_x=str(610.0000000000000)
+#                                    	new_y=str(208.0000000000000)
+#                                    	new_x=str(float(numbers[4])+120)
+#                                    	new_y=str(float(numbers[5]))
+
+                                	
+#                                    	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*5/4)#scaling_factor)
+#                                    	new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*5/4)#scaling_factor)
+#                                	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor)#/scaling_factor)
+#                                	new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor)#/scaling_factor)
+                                	#rescaling the second image and beyond, rescaling isn't to be done with the x or y values, but of the distance 
+                                	#between the first image and the next image of interest.
+                                	#then you need to place it where it should be based off the scaled first image
+                                	#then readjust placement with regrds to the cropped ov stack 
+                                	#only want to scale where the second image  and beyond with regards to the first image, scale image by finding distance bet
+                                	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+                                	new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+#                                	
+#                                	new_x=str((int(float(numbers[4]))-int(float(first_x)))*size/scaling_factor)#/scaling_factor)
+#                                	new_y=str((int(float(numbers[5]))-int(float(first_y)))*size/scaling_factor)#/scaling_factor)
+                                	
+#                                    	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))/scaling_factor)
+#                                    	new_y=str((float(numbers[5])-int(float(first_numbers[5])))/scaling_factor)
+	                    #would replace all instances, so safety measure needed?
+                                print(roi)
+                                print(data_string)
+                                new_data_string=data_string[0].replace(numbers[4],new_x)
+                                new_data_string=new_data_string.replace(numbers[5],new_y)
+                                print(new_data_string)
+                                new_content=line.replace(data_string[0],new_data_string)
+                                f2.write(new_content)	
+                            else:
+                                f2.write(line)
+	                             
 #                            txt = f.read()
 #                            lines = txt.split('\n')
 #	                    content=transform_file.read()
@@ -449,9 +493,9 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 #	                    transform_file=open(path_w_scaling,"w")
 #	                    transform_file.write(new_content)
 #	                    transform_file.close()
-                        transform = Transform_VS.readCoordinateTransform(path_w_scaling)
-                    if scaling_factor == 1:
-                        transform = Transform_VS.readCoordinateTransform(path)
+                    transform = Transform_VS.readCoordinateTransform(path_w_scaling)
+#                    if scaling_factor == 1:
+#                        transform = Transform_VS.readCoordinateTransform(path)
 	            #print(filenames_values[n][i-start_lay])
 	            
 	            
@@ -472,6 +516,9 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
         #		print(patch)
             layer.recreateBuckets()  # update layerset?
     return layerset
+
+
+
 
 # func: preps images for a test align to see if parameters chosen work with images
 # inputs:
@@ -637,13 +684,16 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
                 roi_list.append(roi)
             roi = roi_list
         if not OV_lock:  # roi for each stack of images is collected
-            roi = tiles[1].getBoundingBox()  # needed in OV alignment
-#            print(roi,"before")
-            print(tiles[1].getBoundingBox())
-            for tile in tiles[1:]:
-                roi.add(tile.getBoundingBox())
+#            roi = tiles[1].getBoundingBox()  # needed in OV alignment
+            print(roi,"before")
+#            print(tiles[1].getBoundingBox())
+            for n, tile in enumerate(tiles[1:]):
+                if n == 0:
+                	roi = tile.getBoundingBox()  # needed in OV alignment	
+                else:
+	                roi.add(tile.getBoundingBox())
                 print(tile.getBoundingBox())
-#            print(roi,"after")
+            print(roi,"after")
         if transform:
 	        transforms, transform_XML=get_patch_transform_data(layerset)
 	        return  roi, tiles, transforms, transform_XML
@@ -836,20 +886,29 @@ def overlap_area(ROI=None):
 
 
 def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, size=None, roi=None):  # layerset=None, project=None
+    print(filenames_keys, filenames_values, joint_folder, windows, project_name, pattern, size, roi)
+    
     imp = plugin.FolderOpener.open(
         filenames_keys[0], "virtual")  # open image stack
     title = imp.getTitle()  # get image stack name
     # get roi values, with 10px of wiggle room
-    ROI = imp.setRoi(roi.x-30, roi.y+30, roi.width+30, roi.height-30)
-    # print(imp.getDimensions())
+#    ROI = imp.setRoi(roi.x-30, roi.y+30, roi.width+30, roi.height-30)
+#    print(roi.x, roi.y, roi.width, roi.height)
+    ROI = imp.setRoi(roi.x, roi.y, roi.width, roi.height)
+#    print(imp.getDimensions())
+#    print(size)
     imp = imp.crop("stack")  # crop image to new roi
     old_dim = imp.getDimensions()
+#    print(imp.getDimensions())
     # change image dimensions by specified factor
     width = imp.getDimensions()[0]*size
     height = imp.getDimensions()[1]*size
+#    print(width,height)
     # resize images
     # resize image to changed image dimensions
     imp = imp.resize(width, height, "none")
+#    print(imp.getDimensions())
+    
     Title = imp.setTitle("")  # create new image stack name
     # save to specified directory
     output_scaled = make_dir(joint_folder, "_0", imp, title, windows, True)
