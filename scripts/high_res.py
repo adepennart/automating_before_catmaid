@@ -188,7 +188,7 @@ proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make pro
 transform_dir_big = make_dir(grand_joint_folder,"transform_parameters_"+project_name) #make transform folder
 #large_OV_interim= make_dir(grand_joint_folder, "OV_interim")
 if inverted_image: 
-	large_NO_interim= make_dir(grand_joint_folder, "high_res_interim") #make inverted image directory
+	large_NO_interim= make_dir(grand_joint_folder, "high_res_interim_"+project_name) #make inverted image directory
 	
 if len(OV_folder_list) != len(NO_folder_list):
 	sys.exit("need same folder number for low and high res" ) #find files and paths and test alignment for each substack
@@ -324,13 +324,24 @@ print(len(OV_folder_list)+1, "amount of processed substacks")
 
 if not rerun:	
  	#find max ROI
-	print(roi_list)
+#	print(roi_list)
 #	max_roi=max(roi_list)
 #	print(max_roi)
 	tot_roi = roi_list[0]  # needed in OV alignment
 	for big_tile in roi_list[1:]:
 		tot_roi.add(big_tile)
- 	print(tot_roi)
+# 	print(tot_roi)
+ 	#saves itin first transform folder
+ 	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
+	transform_folds=file_sort(transform_folds, -1) 
+ 	transform_dir=transform_folds[0]
+# 	bounding=BoundingBoxes().addBoundingBox(tot_roi)
+# 	print(bounding)
+# 	xmled=XmlIoBoundingBoxes().toXml(tot_roi)#.boundingBoxToXml(tot_roi)
+# 	print(xml)
+ 	roi_number_file=open(os.path.join(transform_dir, str(1)+"_roi.xml"),"w")
+ 	roi_number_file.write(str(tot_roi))
+ 	roi_number_file.close()
 # 	#potential gui
 # 	while 1: #increases maximum image size parameters by 200 if the images did not align
 # 		gui = GUI.newNonBlockingDialog("Aligned?")
@@ -379,7 +390,7 @@ except IndexError:
 		project=''
 	# project_list=file_sort(project_list)
 	# print(project_list)
-	for transformed in transform_folds:#find out why only one scaling_file comes
+	for n, transformed in enumerate(transform_folds):#find out why only one scaling_file comes
 #		print(transformed)
 		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
 #		transform_files=filter(re.compile("image_stack_\d+.xml").match, os.listdir(transformed))
@@ -393,6 +404,30 @@ except IndexError:
 #		       print(line)
 		       scaling_number_list.append(float(line))
 #        print(scaling_number_list)
+		if n == 0 :
+			roi_file=filter(re.compile("1_roi.xml").match, os.listdir(transformed))
+			path=os.path.join(transformed,roi_file[0])
+#			tot_roi=ReconstructArea().getGeneralPath(path)# .add(path) 
+#			XmlIoBoundingBoxes().boundingBoxToXml()
+			with open(path, 'r+') as f:
+				for line in f :
+#		      		 print(line)
+					file_roi=line
+			project = Project.getProject(project_list[0]) #selects appropriate project for image substack
+			layerset = project.getRootLayerSet()
+			for n, layer in enumerate(layerset.getLayers()):
+	  			if n == 0:
+	  				tiles = layer.getDisplayables(Patch)
+					old_roi=tiles[0].getBoundingBox()
+				else:
+					break
+			roi_values=re.findall("(\d+)", file_roi)
+#			print(roi_values)
+			old_roi.x=int(roi_values[0])
+			old_roi.y=int(roi_values[1])
+			old_roi.width=int(roi_values[2])
+			old_roi.height=int(roi_values[3])
+			tot_roi=old_roi
 
 
 	
@@ -430,7 +465,7 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 			#checks only first folder, but assuming sufficient
 				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
 					gui = GUI.newNonBlockingDialog("Overwrite?")
-					gui.addMessage(" Press ok to overwrite already inverted files in high_res_interim?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
+					gui.addMessage(" Press ok to overwrite already inverted files in high_res_interim_"+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
 					gui.showDialog()
 					if gui.wasOKed():
 						pass
@@ -442,8 +477,8 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 						sys.exit()
 
 	if size != 1:
-		if not rerun:
-			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim")
+#		if not rerun:
+			large_OV_interim= make_dir(grand_joint_folder, "low_res_interim_"+project_name)
 			output_scaled=make_dir(large_OV_interim, "low_res_interim"+str(num))
 			if num == 0:
 				if folder_find(output_scaled,windows):
@@ -451,7 +486,7 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 				#checks only first folder, but assuming sufficient
 					if filter(pattern_3.match, os.listdir(output_subfolders[0])): #checks whether project already exist
 						gui = GUI.newNonBlockingDialog("Overwrite?")
-						gui.addMessage(" Press ok to overwrite already cropped files in low_res_interim?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
+						gui.addMessage(" Press ok to overwrite already cropped files in low_res_interim_"+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
 						gui.showDialog()
 						if gui.wasOKed():
 							pass
@@ -461,9 +496,9 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 						#                        os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
 						elif not gui.wasOKed():
 							sys.exit()
-		if rerun:
-			print("sys.exit() currently does not resize if not during test as needs roi of images from test")
-			sys.exit()
+#		if rerun:
+#			print("sys.exit() currently does not resize if not during test as needs roi of images from test")
+#			sys.exit()
 	if inverted_image:
 		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
 
@@ -558,6 +593,7 @@ for n, layer in enumerate(layerset.getLayers()):
             False,
             False,
             False)
+#projects only saved in first trackem2 folder
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"re_aligned"), False) #save project file before z alignment 	            
 # if proj_folds:
 # 	project.saveAs(os.path.join(proj_folds[num], temp_proj_name+"with_low_res"), False)
