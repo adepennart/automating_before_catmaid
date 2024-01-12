@@ -447,9 +447,7 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
-	layerset=add_patch_v2(filenames_keys,filenames_values
-	, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num],size,tot_roi)
-	
+	layerset=add_patch_v2(filenames_keys,filenames_values, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num],size,tot_roi)
 	counter+=len(filenames_values[0])
 	counter_list.append(counter)
 	print("prepared tile order for best overlay")

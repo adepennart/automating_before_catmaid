@@ -80,9 +80,9 @@ from ini.trakem2.utils import Filter
 import copy
 
 #boundingbox
-from mpicbg.spim.data.generic.base import XmlIoSingleton#XmlIoBoundingBoxes
-from spim.fiji.spimdata.boundingbox import XmlIoBoundingBoxes 
-from spim.fiji.spimdata.boundingbox import BoundingBoxes
+#from mpicbg.spim.data.generic.base import XmlIoSingleton#XmlIoBoundingBoxes
+#from spim.fiji.spimdata.boundingbox import XmlIoBoundingBoxes 
+#from spim.fiji.spimdata.boundingbox import BoundingBoxes
 # func: flushes image cache
 
 
@@ -436,8 +436,8 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 	  
 	#                                	new_x=str((float(numbers[4])-int(float(numbers[4]))))#/scaling_factor)
 	#                                	new_y=str((float(numbers[5])-int(float(numbers[5]))))#/scaling_factor)
-										new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-										new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+										new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+										new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
 	#                                    	new_x=str(int(float(numbers[4]))*5/4)#/scaling_factor)
 	#                                    	new_y=str(int(float(numbers[5]))*5/4)
 	#                                    	new_x=numbers[4]
