@@ -10,7 +10,7 @@ Description:
 	aligns images in the Z plane and montages them in the x-y plane in trakem2 on imagej(useful for OV image stacks)
 
 List of functions:
-    No user defined functions are used in the program.
+	No user defined functions are used in the program.
 
 List of "non standard modules"
 	module functions.py used for this script
@@ -28,12 +28,12 @@ Usage:
 	Pressing the bottom left Run button in the Script window will present user with prompt window for running script
 
 known error:
-    1. only accepts tif files as input
-    2. should check if interim folder full (kind of does)
-    3. get more threads for resizing step
-    4. have time stamps
-    5. pattern check
-    6. problem with loading projects occasionally
+	1. only accepts tif files as input
+	2. should check if interim folder full (kind of does)
+	3. get more threads for resizing step
+	4. have time stamps
+	5. pattern check
+	6. problem with loading projects occasionally
    	7. test whether the trakem2 folders are in the right parent folders
    	8. you need two terabytes to run this script (3-4 times the space it currently takes)
    	9. fix the fact that is calls the files duplicate...
@@ -44,7 +44,7 @@ known error:
 	14. (during realignment for test) assumes that there are no other projects open
 	15. place holder variable assoc_roi made when only one image in layer
 	16. (when test is already run and fetching old test trakem2 file)if not running test opens up previous test project file, clunky way deciding between test mode or not
-    16.1 if it does not find the test trakem2 file crashes
+	16.1 if it does not find the test trakem2 file crashes
 	17. (right before actual alignment)can optimize code by add all patches at once #don't need this if
 	18. (right before actual alignment) issue here where there is a project loaded with the same name
 	19. can number of threads be changed durign alignment
@@ -54,7 +54,7 @@ known error:
 	23. resize should be an option after test
 
 
-    
+	
 based off of Albert Cardona 2011-06-05 script
 """
 #@ File (label = "Input directory", style = "directory") folder
@@ -83,7 +83,7 @@ from ij.gui import GenericDialog
 # --------------------------------------------------------------------------------------
 # Create an instance of GenericDialog
 if Elastic:
-    param=GUIElasticParameters()
+	param=GUIElasticParameters()
 #vision group SBEM pattern
 #pattern_1 = re.compile("([\d]+).*\.tif")
 #pattern_2 = re.compile(".*-([\d]{3})-([\d]+)_.*\.tif")
@@ -131,16 +131,16 @@ output_dir = output_dir.getAbsolutePath()
 grand_joint_folder=output_dir
 
 if orgInput:
-    list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB',get_info=False)
+	list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB',get_info=False)
 #    list_files = get_stacks(folder_path, resolution = [40,40], match_pattern = 'OV')
 
-    
-    # Split list of TIF files into stacks of overlapping files
-    OV_folder_list = split_stacks(list_files)
-    print(OV_folder_list)
-    #filenames_keys_big, filenames_values_big, OV_folder_list= list_sampleMaker(OV_folder_list)
-    filenames_keys_big, filenames_values_big, OV_folder_list=list_decoder(OV_folder_list)
-    
+	
+	# Split list of TIF files into stacks of overlapping files
+	OV_folder_list = split_stacks(list_files)
+	print(OV_folder_list)
+	#filenames_keys_big, filenames_values_big, OV_folder_list= list_sampleMaker(OV_folder_list)
+	filenames_keys_big, filenames_values_big, OV_folder_list=list_decoder(OV_folder_list)
+	
 else:
 	stacks = get_file_paths_folders(folder_path)
 	OV_folder_list=folder_find(folder_path,windows) # get OV subdirectories
@@ -231,7 +231,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			layerset.setMinimumDimensions() #readjust canvas to minimum dimensions
 			# print(roi, tiles)
 		
-            
+			
 # 			This is removed since the blending doesn't use the cropping and enables more then two images two be aligned
 # 			if len(filenames_keys) != 1: #gets the overlap coordinates of aligned images 
 # 				new_roi, assoc_roi =overlap_area(roi)
@@ -251,7 +251,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 #			print(filenames_keys, filenames_values)
 			gui = GUI.newNonBlockingDialog("Aligned?")
 			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not, pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
-    #		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
+	#		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 			gui.showDialog()
 			if gui.wasOKed():
 				if num > 0:
@@ -319,7 +319,7 @@ except IndexError:
 		with open(path, 'r+') as f:
 		   for line in f :
 #		       print(line)
-		       scaling_number_list.append(float(line))
+			   scaling_number_list.append(float(line))
 #project_list=file_sort(project_list)
 #print(project_list)
 
@@ -392,11 +392,11 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 #	print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
-    
+	
 
 
 #file_values_big_list = apply_transform(transform_dir_big, file_keys_big_list, file_values_big_list, Windows=False)
-    
+	
 
 
 counter=0
@@ -468,7 +468,7 @@ mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True) #,blend=True)
-      
+	  
 optionalClosingAndDeleting(project,output_dir,project_name)
 
 print("Done!")
