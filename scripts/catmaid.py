@@ -5,18 +5,18 @@ Author: Auguste de Pennart
 Description:
 	can add images to a (new/old )trakem2 project
 List of functions:
-    No user defined functions are used in the program.
+	No user defined functions are used in the program.
 List of "non standard modules"
 	module functions.py used for this script
 Procedure:
-    1. pulls from seperate substacks to one trakem2 project
-    2. aligns images in the z plane
-    3. exports both processed and unproccesed images
+	1. pulls from seperate substacks to one trakem2 project
+	2. aligns images in the z plane
+	3. exports both processed and unproccesed images
 Usage:
 	to be used through Imagej as a script
 	Pressing the bottom left Run button in the Script window will present user with prompt window for running script
 known error:
-    selecting "add images.." and "is project..." will add tiles from layer 1 to end even if this is not what you want.
+	selecting "add images.." and "is project..." will add tiles from layer 1 to end even if this is not what you want.
    	 
 based off of Albert Cardona 2011-06-05 script
 """
@@ -103,35 +103,35 @@ big_names_values.append(filenames_values[0])
 
 file_list= os.listdir(proj_dir)
 if project_name+"test.xml" in file_list:  #checks whether project already exists
-            gui = GUI.newNonBlockingDialog("Overwrite?")
-            gui.addMessage(" Press ok to overwrite project file?")
-            gui.showDialog()
-            if gui.wasOKed():
-                if windows:
-                    os.remove(sub_dir+"\\"+temp_proj_name+"test")
-                if not windows:
-                    os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
-            elif not gui.wasOKed():
-                sys.exit()
+			gui = GUI.newNonBlockingDialog("Overwrite?")
+			gui.addMessage(" Press ok to overwrite project file?")
+			gui.showDialog()
+			if gui.wasOKed():
+				if windows:
+					os.remove(sub_dir+"\\"+temp_proj_name+"test")
+				if not windows:
+					os.remove(sub_dir+"/"+temp_proj_name+"test.xml")
+			elif not gui.wasOKed():
+				sys.exit()
 if not already_loaded:
-    project = Project.newFSProject("blank", None, proj_dir) #Creates a TrakEM2 project
+	project = Project.newFSProject("blank", None, proj_dir) #Creates a TrakEM2 project
 else:
-    project = Project.getProjects().get(0)
+	project = Project.getProjects().get(0)
 layerset = project.getRootLayerSet() #creates initial collection of layers variable
 print(big_names_keys, big_names_values)
 
 if yes_image_add:
-    #could be interesting for integration into OV_overall to specify first item, here it does not matter
-    for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
-        layerset=add_patch_v2([big_names_keys[i]],[big_names_values[i]],project, 0, len(filenames_values)+1)
+	#could be interesting for integration into OV_overall to specify first item, here it does not matter
+	for i in range(0,len(big_names_keys)): #set up counter to determine how many files per substack and populates trakem2 layers
+		layerset=add_patch_v2([big_names_keys[i]],[big_names_values[i]],project, 0, len(filenames_values)+1)
 
 project.saveAs(os.path.join(proj_dir, project_name+"aligned"), False) #save project file, after z alignment
 layerset.setMinimumDimensions() #readjust canvas to only NO tiles)
 
 if yes_export:
-    #exports images
-    mini_dir= make_dir(output_dir,  "export_unprocessed")
-    export_image(layerset, mini_dir, canvas_roi=True)
-    mini_dir= make_dir(output_dir,  "export_processed")
-    export_image(layerset, mini_dir, canvas_roi=True, processed=True)
+	#exports images
+	mini_dir= make_dir(output_dir,  "export_unprocessed")
+	exportProject(project, mini_dir,canvas_roi=True,blend=True)
+	mini_dir= make_dir(output_dir,  "export_processed")
+	exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
 print("Done!")
