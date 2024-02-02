@@ -9,7 +9,7 @@ Author: Auguste de Pennart
 Description:
 	aligns images in the Z plane and montages them in the x-y plane in trakem2 on imagej(useful for OV image stacks)
 
-List of functions:
+ List of functions:
 	No user defined functions are used in the program.
 
 List of "non standard modules"
@@ -131,16 +131,18 @@ output_dir = output_dir.getAbsolutePath()
 grand_joint_folder=output_dir
 
 if orgInput:
-	list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB',get_info=False)
-#    list_files = get_stacks(folder_path, resolution = [40,40], match_pattern = 'OV')
+	#list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB',get_info=False)
+	list_files = get_stacks(folder_path, resolution = [40,40], match_pattern = 'OV')
+	print('ok')
+	print([l[0] for l in list_files])
 
-	
 	# Split list of TIF files into stacks of overlapping files
 	OV_folder_list = split_stacks(list_files)
 	print(OV_folder_list)
+
 	#filenames_keys_big, filenames_values_big, OV_folder_list= list_sampleMaker(OV_folder_list)
-	filenames_keys_big, filenames_values_big, OV_folder_list=list_decoder(OV_folder_list)
-	
+	filenames_keys_big, filenames_values_big, OV_folder_list = list_decoder(OV_folder_list)
+	print(filenames_keys_big, filenames_values_big)
 else:
 	stacks = get_file_paths_folders(folder_path)
 	OV_folder_list=folder_find(folder_path,windows) # get OV subdirectories
@@ -448,10 +450,10 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 #			layerset=add_patch(filenames_keys[1:], filenames_values[1:], project, 0, 0) #issue here where there is a project loaded with the same name
 #	align_layers(model_index, octave_size, layerset, True) #could change number of threads
 	layerset.setMinimumDimensions() 
- 	
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment
+
 #align_layers(model_index, octave_size, layerset, True) #could change number of threads
 AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment
 
 	#print(sub_dir, temp_proj_name+"aligned")
 layerset.setMinimumDimensions()
