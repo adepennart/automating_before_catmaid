@@ -465,8 +465,8 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 #										new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
 #										new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
 										
-										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor-roi.x*size)#/scaling_factor)
-										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor-roi.y*size)#/scaling_factor)
+										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
+										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
 											
 	#                                	
 	#                                	new_x=str((int(float(numbers[4]))-int(float(first_x)))*size/scaling_factor)#/scaling_factor)
@@ -530,6 +530,8 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 		#		print(patch)
 			layer.recreateBuckets()  # update layerset?
 	return layerset
+
+
 
 
 
@@ -1814,10 +1816,10 @@ def get_files_info(directory_path, only_first=True):
 
 
 def get_stacks(master_dir, resolution, match_pattern='', get_info=True):
-	def checkException(directories, exceptions):
-		for exception in exceptions:
-			if exception in directory:
-				return True
+	#def checkException(directories, exceptions):
+	#	for exception in exceptions:
+	#		if exception in directories:
+	#			return True
 			
 		
 	'''
@@ -1843,11 +1845,12 @@ def get_stacks(master_dir, resolution, match_pattern='', get_info=True):
 	master_dir = os.path.abspath(master_dir)
 	directories = [os.path.join(master_dir, d) for d in os.listdir(master_dir) if match_pattern in d]
 	#print(directories)
+	directories.sort()
 	# Iterate over each subdirectory to find correct TIF files
 	list_files = []
 	
 	#Name of exceptionfolders
-	exceptions=[]
+	#exceptions=[]
 	for directory in directories:
 		#get_files_info only works if there are info files in the folder
 	 	if get_info:
@@ -1855,9 +1858,9 @@ def get_stacks(master_dir, resolution, match_pattern='', get_info=True):
 			k_info, v_info = get_files_info(directory)
 			if resolution != v_info[k_info.index('pixelsize')]:
 				continue
-			if checkException(directories, exceptions):
-				break
-		
+			#if checkException(directory, exceptions):
+			#	break
+		print(directory)
 		
 		all_tifs = [os.path.join(directory, f) for f in os.listdir(directory) if '.tif' in f]
 	   	#print(all_tifs)
@@ -1947,9 +1950,9 @@ def split_stacks(stacks_list):
 				tif_paths.append(stacks_list[i][index_a:index_b+1])
 		new_stacks.append(tif_paths)
 
-		if diff > 0:
-			# If there is a discrepancy between 
-			new_stacks.append(['']*diff)
+	#	if diff > 0:
+	#		# If there is a discrepancy between 
+	#		new_stacks.append(['']*diff)
 			
 	return new_stacks
 
@@ -2023,7 +2026,7 @@ def list_decoder(file_list):
 		file_names.append(file_names_temp)
 		folder_paths.append(folder_paths_temp)
 	
-	return folder_paths[3:], file_names[3:], file_list[3:]
+	return folder_paths, file_names, file_list
 
 #Makes a shorter version of file_list to be used as a smaller sampler to test the program on.
 def list_sampleMaker(file_list):

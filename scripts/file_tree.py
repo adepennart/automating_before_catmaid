@@ -29,6 +29,7 @@ Usage:
 known error:
 	1. would love to have an actual tree looking thing
 	2. org function not working
+ 	3. tree not organized numerically
     
 loosely based off of Albert Cardona 2011-06-05 script
 
