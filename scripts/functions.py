@@ -426,26 +426,27 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 									if n == 0:
 										new_x=str(float(numbers[4])/scaling_factor)
 										new_y=str(float(numbers[5])/scaling_factor)
-									elif n == 1:
-	#                                    	new_x=str(float(numbers[4])+100)
-	#                                    	new_y=str(float(numbers[5]))
-	#                                    	new_x=str(484.0000000000000)
-	#                                    	new_y=str(208.0000000000000)
-	#                                    	new_x=str((float(numbers[4])-int(float(numbers[4]))+100))
-	#                                    	new_y=str((float(numbers[5])-int(float(numbers[5]))))
-	  
-	#                                	new_x=str((float(numbers[4])-int(float(numbers[4]))))#/scaling_factor)
-	#                                	new_y=str((float(numbers[5])-int(float(numbers[5]))))#/scaling_factor)
-										new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-										new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
-	#                                    	new_x=str(int(float(numbers[4]))*5/4)#/scaling_factor)
-	#                                    	new_y=str(int(float(numbers[5]))*5/4)
-	#                                    	new_x=numbers[4]
-	#                                    	new_y=numbers[5]
-										first_numbers=numbers
-										first_x=new_x
-										first_y=new_y
-									elif n > 1:
+#									elif n == 1:
+#	#                                    	new_x=str(float(numbers[4])+100)
+#	#                                    	new_y=str(float(numbers[5]))
+#	#                                    	new_x=str(484.0000000000000)
+#	#                                    	new_y=str(208.0000000000000)
+#	#                                    	new_x=str((float(numbers[4])-int(float(numbers[4]))+100))
+#	#                                    	new_y=str((float(numbers[5])-int(float(numbers[5]))))
+#	  
+#	#                                	new_x=str((float(numbers[4])-int(float(numbers[4]))))#/scaling_factor)
+#	#                                	new_y=str((float(numbers[5])-int(float(numbers[5]))))#/scaling_factor)
+#										new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+#										new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+#	#                                    	new_x=str(int(float(numbers[4]))*5/4)#/scaling_factor)
+#	#                                    	new_y=str(int(float(numbers[5]))*5/4)
+#	#                                    	new_x=numbers[4]
+#	#                                    	new_y=numbers[5]
+#										first_numbers=numbers
+#										first_x=new_x
+#										first_y=new_y
+									elif n > 0:
+#									elif n > 1:
 	#                                    	new_x=str(610.0000000000000)
 	#                                    	new_y=str(208.0000000000000)
 	#                                    	new_x=str(float(numbers[4])+120)
@@ -461,8 +462,12 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 										#then you need to place it where it should be based off the scaled first image
 										#then readjust placement with regrds to the cropped ov stack 
 										#only want to scale where the second image  and beyond with regards to the first image, scale image by finding distance bet
-										new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-										new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+#										new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+#										new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+										
+										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor-roi.x*size)#/scaling_factor)
+										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor-roi.y*size)#/scaling_factor)
+											
 	#                                	
 	#                                	new_x=str((int(float(numbers[4]))-int(float(first_x)))*size/scaling_factor)#/scaling_factor)
 	#                                	new_y=str((int(float(numbers[5]))-int(float(first_y)))*size/scaling_factor)#/scaling_factor)
