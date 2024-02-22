@@ -261,7 +261,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 					project.remove(True) 
 				scaling_number_list.append(scaling_number)
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transform_dir)
+				save_xml_files(transform_XML, transform_dir,scaling_factor=scaling_number,roi=roi,n=num)
 				transform_list.append(transform_dir)
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
 				scaling_number_file.write(str(scaling_number))

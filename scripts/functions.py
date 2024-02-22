@@ -336,7 +336,7 @@ def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 			imp = IJ.openImage(filepath)
 			IJ.run(imp, "Invert", "")
 			sub_dir = make_dir(joint_folder, "_"+str(n),
-							   imp, "/"+str(m), windows, True)
+							   imp, "/"+str(n)+"_"+str(m), windows, True)
 #			print(sub_dir)
 			NO_file = filter(pattern.match, os.listdir(sub_dir))
 			NO_file = file_sort(NO_file)
@@ -407,120 +407,33 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 				if transform_folder:
 					xml_file= "image_stack_"+str(n+1)+".xml"
 					path=os.path.join(transform_folder,xml_file)
-#                    if scaling_factor != 1:
-#	                    transform_file=open(path,"r")
-					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-					transform_file=open(path_w_scaling,"w")
-					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
-						for line in f:
-							if re.findall("AffineModel2D", line): # makes directory
-								data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
-							   #should only be one line in content
-								numbers=data_string[0].replace("data=\"","")
-	#                           print(number[0].replace("data=\"",""))
-								numbers=re.findall("[\d.\-E]+", numbers)
-								if size == 1:
-									new_x=str(float(numbers[4])/scaling_factor)
-									new_y=str(float(numbers[5])/scaling_factor)
-								elif size > 1:
-									if n == 0:
-										new_x=str(float(numbers[4])/scaling_factor)
-										new_y=str(float(numbers[5])/scaling_factor)
-#									elif n == 1:
-#	#                                    	new_x=str(float(numbers[4])+100)
-#	#                                    	new_y=str(float(numbers[5]))
-#	#                                    	new_x=str(484.0000000000000)
-#	#                                    	new_y=str(208.0000000000000)
-#	#                                    	new_x=str((float(numbers[4])-int(float(numbers[4]))+100))
-#	#                                    	new_y=str((float(numbers[5])-int(float(numbers[5]))))
-#	  
-#	#                                	new_x=str((float(numbers[4])-int(float(numbers[4]))))#/scaling_factor)
-#	#                                	new_y=str((float(numbers[5])-int(float(numbers[5]))))#/scaling_factor)
-#										new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-#										new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
-#	#                                    	new_x=str(int(float(numbers[4]))*5/4)#/scaling_factor)
-#	#                                    	new_y=str(int(float(numbers[5]))*5/4)
-#	#                                    	new_x=numbers[4]
-#	#                                    	new_y=numbers[5]
-#										first_numbers=numbers
-#										first_x=new_x
-#										first_y=new_y
-									elif n > 0:
-#									elif n > 1:
-	#                                    	new_x=str(610.0000000000000)
-	#                                    	new_y=str(208.0000000000000)
-	#                                    	new_x=str(float(numbers[4])+120)
-	#                                    	new_y=str(float(numbers[5]))
-	
-										
-	#                                    	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*5/4)#scaling_factor)
-	#                                    	new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*5/4)#scaling_factor)
-	#                                	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor)#/scaling_factor)
-	#                                	new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor)#/scaling_factor)
-										#rescaling the second image and beyond, rescaling isn't to be done with the x or y values, but of the distance 
-										#between the first image and the next image of interest.
-										#then you need to place it where it should be based off the scaled first image
-										#then readjust placement with regrds to the cropped ov stack 
-										#only want to scale where the second image  and beyond with regards to the first image, scale image by finding distance bet
-#										new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-#										new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
-										
-										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
-										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
-											
-	#                                	
-	#                                	new_x=str((int(float(numbers[4]))-int(float(first_x)))*size/scaling_factor)#/scaling_factor)
-	#                                	new_y=str((int(float(numbers[5]))-int(float(first_y)))*size/scaling_factor)#/scaling_factor)
-										
-	#                                    	new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))/scaling_factor)
-	#                                    	new_y=str((float(numbers[5])-int(float(first_numbers[5])))/scaling_factor)
-						#would replace all instances, so safety measure needed?
-#                                print(roi)
-#                                print(data_string)
-								new_data_string=data_string[0].replace(numbers[4],new_x)
-								new_data_string=new_data_string.replace(numbers[5],new_y)
-#                                print(new_data_string)
-								new_content=line.replace(data_string[0],new_data_string)
-								f2.write(new_content)	
-							else:
-								f2.write(line)
-								 
-#                            txt = f.read()
-#                            lines = txt.split('\n')
-#	                    content=transform_file.read()
-#	                    print(content)
-#	                    data_string=re.findall("data=\"[\d.\sE-]+", content) # makes directory
-#	                    #should only be one line in content
-#	                    numbers=data_string[0].replace("data=\"","")
-#	#                    print(number[0].replace("data=\"",""))
-#	                    numbers=re.findall("[\d.-E]+", numbers)
-#	                    new_x=str(float(numbers[4])/scaling_factor)
-#	                    new_y=str(float(numbers[5])/scaling_factor)
-#	                    #would replace all instances, so safety measure needed?
-#	                    new_data_string=data_string[0].replace(numbers[4],new_x)
-#	                    new_data_string=new_data_string.replace(numbers[5],new_y)
-#	#                    print(new_data_string)
-#	                    new_content=content.replace(data_string[0],new_data_string)
-#	                    print(new_content)
-#	                    transform_file.close()
-#	                    path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-#	                    transform_file=open(path_w_scaling,"w")
-#	                    transform_file.write(new_content)
-#	                    transform_file.close()
-					transform = Transform_VS.readCoordinateTransform(path_w_scaling)
-#                    if scaling_factor == 1:
-#                        transform = Transform_VS.readCoordinateTransform(path)
-				#print(filenames_values[n][i-start_lay])
-				
-				
-			 
-#	            patch.updateMipMaps()
-				
-				#print(patch)
-				
-				# print(fold)
-				# print(filenames_values[n][i-start_lay])
-				# print(i+start_lay)
+#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+#					transform_file=open(path_w_scaling,"w")
+#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+#						for line in f:
+#							if re.findall("AffineModel2D", line): # makes directory
+#								data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
+#							   #should only be one line in content
+#								numbers=data_string[0].replace("data=\"","")
+#								numbers=re.findall("[\d.\-E]+", numbers)
+#								if size == 1:
+#									new_x=str(float(numbers[4])/scaling_factor)
+#									new_y=str(float(numbers[5])/scaling_factor)
+#								elif size > 1:
+#									if n == 0:
+#										new_x=str(float(numbers[4])/scaling_factor)
+#										new_y=str(float(numbers[5])/scaling_factor)
+#									elif n > 0:
+#										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
+#										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
+#								new_data_string=data_string[0].replace(numbers[4],new_x)
+#								new_data_string=new_data_string.replace(numbers[5],new_y)
+#								new_content=line.replace(data_string[0],new_data_string)
+#								f2.write(new_content)	
+#							else:
+#								f2.write(line)
+#					transform = Transform_VS.readCoordinateTransform(path_w_scaling)
+					transform = Transform_VS.readCoordinateTransform(path)
 				filepath = os.path.join(fold, filenames_values[n][i-start_lay])
 				patch = Patch.createPatch(project, filepath)
 				if transform_folder:
@@ -590,12 +503,12 @@ def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None
 		# makes directory and saves file
 		if empty:
 			sub_dir = make_dir(test_interim, "_"+str(num+1),
-							   imp, title, windows, True)
+							   imp, str(num)+"_"+title, windows, True)
 		if not empty:
 			sub_dir = make_dir(test_interim, "_"+str(num),
 							   imp, title, windows, True)
 		temp_filenames_keys[num] = sub_dir  # reasigns new filepath and image
-		temp_filenames_values[num] = [title]
+		temp_filenames_values[num] = [str(num)+"_"+title]
 	return temp_filenames_keys, temp_filenames_values
 
 # func: stiches images together
@@ -1151,7 +1064,7 @@ def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=Fal
 "Following is experimental code modified and written to try to implement elastic alignment"
 "author: Viggo Troback"
 
-def save_xml_files(xml_data_list, destination_directory):
+def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None,n=0):
 
 	for idx, xml_data in enumerate(xml_data_list):
 		# Specify the filename for the XML file (you can customize this as needed)
@@ -1162,7 +1075,40 @@ def save_xml_files(xml_data_list, destination_directory):
 		
 		# Write the XML data to the file
 		with open(destination_file_path, "w") as xml_file:
-			xml_file.write(xml_data)
+			print((xml_data))
+#							xml_file= "image_stack_"+str(n+1)+".xml"
+#					path=os.path.join(transform_folder,xml_file)
+#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+#					transform_file=open(path_w_scaling,"w")
+#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+			xml_data_list = list(xml_data.split("\n"))
+			for line in xml_data_list:
+				print(line)
+				if re.findall("AffineModel2D", line): # makes directory
+					data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
+				   #should only be one line in content
+					numbers=data_string[0].replace("data=\"","")
+					numbers=re.findall("[\d.\-E]+", numbers)
+					if size == 1:
+						new_x=str(float(numbers[4])/scaling_factor)
+						new_y=str(float(numbers[5])/scaling_factor)
+					elif size > 1:
+						if n == 0:
+							new_x=str(float(numbers[4])/scaling_factor)
+							new_y=str(float(numbers[5])/scaling_factor)
+						elif n > 0:
+							new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
+							new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
+					new_data_string=data_string[0].replace(numbers[4],new_x)
+					new_data_string=new_data_string.replace(numbers[5],new_y)
+					new_content=line.replace(data_string[0],new_data_string)
+					print(new_content)
+#					f2.write(new_content)
+					xml_file.write(new_content)
+				else:
+					xml_file.write(line)	
+			
+#			xml_file.write(xml_data)
 
 def optionalClosingAndDeleting(project, output_directory,project_name):
 	# Create a dialog box with Yes/No options as checkboxes

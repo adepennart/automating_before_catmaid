@@ -38,6 +38,10 @@ known error:
 	13. low-res interim is not full if not scaled
 	14. pattern change if you are using high_res_interim
 	15. save test project after Gui oked
+	16. (new) always remove all projects open trakem2
+	17. (new) if different image layout, seperate images into different substacks
+	18. (new) assumes OV stack same throughout image stack
+	19. no errors from elastic, but ensure if transforms applied to full stack
 	
 loosely based off of Albert Cardona 2011-06-05 script
 
@@ -263,8 +267,38 @@ for num in range(0,len(OV_folder_list)):
 			if gui.wasOKed():
 				if num > 0:
 				   project.remove(True)  
+				   
+#				xml_file= "image_stack_"+str(n+1)+".xml"
+#					path=os.path.join(transform_folder,xml_file)
+#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
+#					transform_file=open(path_w_scaling,"w")
+#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
+#						for line in f:
+#							if re.findall("AffineModel2D", line): # makes directory
+#								data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
+#							   #should only be one line in content
+#								numbers=data_string[0].replace("data=\"","")
+#								numbers=re.findall("[\d.\-E]+", numbers)
+#								if size == 1:
+#									new_x=str(float(numbers[4])/scaling_factor)
+#									new_y=str(float(numbers[5])/scaling_factor)
+#								elif size > 1:
+#									if n == 0:
+#										new_x=str(float(numbers[4])/scaling_factor)
+#										new_y=str(float(numbers[5])/scaling_factor)
+#									elif n > 0:
+#										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
+#										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
+#								new_data_string=data_string[0].replace(numbers[4],new_x)
+#								new_data_string=new_data_string.replace(numbers[5],new_y)
+#								new_content=line.replace(data_string[0],new_data_string)
+#								f2.write(new_content)	
+				
+				
+				
+				
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transform_dir)
+				save_xml_files(transform_XML, transform_dir,size,scaling_number,roi,num)
 				transform_list.append(transform_dir)
 				scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
@@ -454,8 +488,14 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
 project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment 	
 #following allows for little corrections in alingment, can probably just be translate, also be putin function
-param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index -
-										1, correspondenceWeight=0.3)  # which extends Align.Param
+layerset.setMinimumDimensions() #readjust canvas to only high res tiles
+#align_layers(model_index=model_index, octave_size=600, layerset=layerset, OV_lock=None,transform=False)
+if model_index > 1:
+	param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index -1,
+	correspondenceWeight=0.3)  # which extends Align.Param
+else:
+	param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index,
+	correspondenceWeight=0.3)  # which extends Align.Param
 param.sift.maxOctaveSize = 600
 for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get all tiles
@@ -463,7 +503,7 @@ for n, layer in enumerate(layerset.getLayers()):
 			param,
 			tiles,
 			[tiles[0]],  # non_move,
-			True,
+			False,
 			False,
 			False,
 			False)
