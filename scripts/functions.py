@@ -1761,7 +1761,7 @@ def get_files_info(directory_path, only_first=True):
 		return files_keys, files_info
 
 
-def get_stacks(master_dir, resolution, match_pattern='', get_info=True):
+def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_info=True):
 	#def checkException(directories, exceptions):
 	#	for exception in exceptions:
 	#		if exception in directories:
@@ -1785,12 +1785,19 @@ def get_stacks(master_dir, resolution, match_pattern='', get_info=True):
 		match_pattern (`str`):
 		
 			Pattern to match in the directory names. Empty string by default.
+            			
+		exceptions (list of 'str'):
+		
+			List of string to look for and exclude folders that contain it. None by default
 	
 	'''
 	# List subdirectories
 	master_dir = os.path.abspath(master_dir)
 	directories = [os.path.join(master_dir, d) for d in os.listdir(master_dir) if match_pattern in d]
-	#print(directories)
+	if exceptions is not None:
+		for exception in exceptions:
+			directories = [d for d in directories if exception not in d]
+    #print(directories)
 	directories.sort()
 	# Iterate over each subdirectory to find correct TIF files
 	list_files = []
