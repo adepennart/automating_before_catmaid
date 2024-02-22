@@ -154,8 +154,7 @@ exe.scheduleAtFixedRate(releaseAll, 0, 60, TimeUnit.SECONDS)
 grand_joint_folder=output_dir
 
 if orgInput:
-	list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB',get_info=False)
-#    list_files = get_stacks(folder_path, resolution = [40,40], match_pattern = 'OV')
+	list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB', exceptions=['ISOLATED'])
 
 	
 	# Split list of TIF files into stacks of overlapping files
