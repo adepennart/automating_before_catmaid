@@ -264,6 +264,46 @@ for num in range(0,len(OV_folder_list)):
 			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
 			gui.showDialog()
 			if gui.wasOKed():
+#				print(temp_filenames_keys,temp_filenames_values)
+				print(roi,tiles)
+				filenames_values, filenames_keys, roi, tiles =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
+#				print(man_fixed_filenames_keys,man_fixed_filenames_values)
+				print(roi,tiles)
+				print("hre")
+				print(filenames_keys)
+				print(filenames_values)
+#				if temp_filenames_values == man_fixed_filenames_values:
+#					pass
+#				else:
+#					fixed_filenames_values=[0]*len(filenames_values)
+#					fixed_filenames_keys=[0]*len(filenames_keys)
+#					for n in range(0, len(man_fixed_filenames_values)):
+#						for m in range(0, len(temp_filenames_values)):
+#							if temp_filenames_values[m] == man_fixed_filenames_values[n]:
+#								fixed_filenames_keys[n]=filenames_keys[m]
+#								fixed_filenames_values[n]=filenames_values[m]
+#								
+#					filenames_keys=[]
+#					filenames_values=[]
+#					filenames_keys=fixed_filenames_keys
+#					filenames_values=fixed_filenames_values
+				transforms, transform_XML=get_patch_transform_data(layerset)
+					#if you accind
+#				
+#can be function get new organization of patches after moving them manually	   
+#				man_moved_tiles=[]
+#				man_moved_paths=[]
+#				for n, layer in enumerate(layerset.getLayers()):
+#					tiles = layer.getDisplayables(Patch)
+#					for tile in tiles:
+#						for n, filename in enumerate(filenames_values:)
+#							if tile.title == filename:
+#								print("hey you found me")
+#								man_moved_tiles.append[tile.title]
+#								man_moved_tiles[n] = filenames_keys[n]
+#							else:
+#								pass
+#				filenames_values
 				if num > 0:
 				   project.remove(True)  
 				   
@@ -360,7 +400,7 @@ except IndexError:
 			project=Project.openFSProject(xml_filepath, True)
 		project_list.append(project)
 		project=''
-	#load in scaling factor and roi file	
+	#load in scaling factor and roi file	#no longer needed?
 	for n, transformed in enumerate(transform_folds):#find out why only one scaling_file comes
 #		print(transformed)
 		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))

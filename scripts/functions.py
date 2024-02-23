@@ -609,6 +609,7 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 			# 	for m, tile_2 in enumerate(tiles[n:]):
 			# 		tile.link(tile_2)
 			for tile in tiles[0:]:  # roi for each stack of images is collected
+				print(tile.getBoundingBox())
 				roi = tile.getBoundingBox()  # needed in OV alignment
 				roi_list.append(roi)
 			roi = roi_list
@@ -617,6 +618,7 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 #            print(roi,"before")
 #            print(tiles[1].getBoundingBox())
 			for n, tile in enumerate(tiles[1:]):
+				print(tile.title)
 				if n == 0:
 					roi = tile.getBoundingBox()  # needed in OV alignment	
 				else:
@@ -1075,7 +1077,7 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 		
 		# Write the XML data to the file
 		with open(destination_file_path, "w") as xml_file:
-			print((xml_data))
+#			print((xml_data))
 #							xml_file= "image_stack_"+str(n+1)+".xml"
 #					path=os.path.join(transform_folder,xml_file)
 #					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
@@ -1083,7 +1085,7 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 #					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
 			xml_data_list = list(xml_data.split("\n"))
 			for line in xml_data_list:
-				print(line)
+#				print(line)
 				if re.findall("AffineModel2D", line): # makes directory
 					data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
 				   #should only be one line in content
@@ -1102,7 +1104,7 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 					new_data_string=data_string[0].replace(numbers[4],new_x)
 					new_data_string=new_data_string.replace(numbers[5],new_y)
 					new_content=line.replace(data_string[0],new_data_string)
-					print(new_content)
+#					print(new_content)
 #					f2.write(new_content)
 					xml_file.write(new_content)
 				else:
@@ -2004,3 +2006,36 @@ def list_sampleMaker(file_list):
 		folder_paths.append(folder_paths_temp)
 	
 	return folder_paths[3:5], file_names[3:5], file_list[3:5]
+
+#can be function get new organization of patches after moving them manually	  
+#non funcitonal dones;t switch and also doesn't fix actual filenames_keys_vlaues
+def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,roi=None):
+	man_moved_tiles=[0]*len(temp_filenames_keys)
+	man_moved_paths=[0]*len(temp_filenames_keys)
+	roi_list=[]
+	for layer in layerset.getLayers():
+		tiles = layer.getDisplayables(Patch)
+		for n, tile in enumerate(tiles):
+			for m, filename in enumerate(temp_filenames_values):
+#				print(tile.title,filename)
+				if str(tile.title) == str(filename[0]):
+#					print("hey you found me")
+					man_moved_tiles[n]=filenames_values[m]
+					man_moved_paths[n] = filenames_keys[m]
+#					print(man_moved_paths, "switch")
+				else:
+					pass
+			if roi:
+				if n > 0:
+					print(tile.getBoundingBox())
+					if n == 1:
+						roi = tile.getBoundingBox()  # needed in OV alignment	
+					else:
+						roi.add(tile.getBoundingBox())
+			elif not roi:
+				roi = tile.getBoundingBox()  # needed in OV alignment
+				roi_list.append(roi)
+	roi = roi_list
+	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles 
+		return man_moved_tiles, man_moved_paths, roi, tiles
+	return man_moved_tiles, man_moved_paths

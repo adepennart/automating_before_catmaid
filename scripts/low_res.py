@@ -258,6 +258,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			if gui.wasOKed():
 				if num > 0:
 					print("hey boi")
+					filenames_values, filenames_keys, roi, tiles =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,False)
 					project.remove(True) 
 				scaling_number_list.append(scaling_number)
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
