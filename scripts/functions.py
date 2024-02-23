@@ -2032,10 +2032,10 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 						roi = tile.getBoundingBox()  # needed in OV alignment	
 					else:
 						roi.add(tile.getBoundingBox())
-			elif not roi:
-				roi = tile.getBoundingBox()  # needed in OV alignment
-				roi_list.append(roi)
-	roi = roi_list
+#			elif not roi:
+#				roi = tile.getBoundingBox()  # needed in OV alignment
+#				roi_list.append(roi)
+#	roi = roi_list
 	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles 
 		return man_moved_tiles, man_moved_paths, roi, tiles
 	return man_moved_tiles, man_moved_paths
