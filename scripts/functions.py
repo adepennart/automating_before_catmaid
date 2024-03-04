@@ -1107,9 +1107,9 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 							new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
 							new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
 	#                        
-#							first_numbers=numbers
-#							first_x=new_x
-#							first_y=new_y
+							first_numbers=numbers
+							first_x=new_x
+							first_y=new_y
 						elif idx > 1:
 							#rescaling the second image and beyond, rescaling isn't to be done with the x or y values, but of the distance 
 							#between the first image and the next image of interest.

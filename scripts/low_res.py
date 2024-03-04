@@ -256,13 +256,13 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 	#		gui.addMessage("Inspect alignment results. If there is any jitter (that isn't already present\n in the OV itself), manually fix this by re-running the alignment with updated\n parameters (i.e., try increasing Maximum Image Size parameter by\n 200 px.)\n\n Check image tile overlap and blend if desired.\n (Note: There is no 'Undo' for blending).\n\n If you would like to revert to previous state, use project 'montage_checkpoint.xml'.\n\n When image alignment is satisfactory, select 'Export'. A project .xml file\n will be saved in <dir> with user changes. Images will be exported as .tif to <dir>.")
 			gui.showDialog()
 			if gui.wasOKed():
+				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
 				if num > 0:
 					print("hey boi")
 					project.remove(True) 
-				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
 				scaling_number_list.append(scaling_number)
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transforms, size,scaling_number,roi)#,num)
+				save_xml_files(transform_XML, transform_dir, 1,scaling_number,roi)#,num)
 				transform_list.append(transform_dir)
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
 				scaling_number_file.write(str(scaling_number))
