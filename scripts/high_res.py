@@ -195,9 +195,14 @@ if inverted_image:
 	
 if len(OV_folder_list) != len(NO_folder_list):
 	sys.exit("need same folder number for low and high res" ) #find files and paths and test alignment for each substack
-	
-for num in range(0,len(OV_folder_list)):
 
+for num in range(0,len(OV_folder_list)):#find duplicates
+	print("checking correct number of files for folder "+str(num))
+	filenames_keys=filenames_keys_big[num]
+	filenames_values=filenames_values_big[num]
+	dup_find(filenames_keys,filenames_values)
+
+for num in range(0,len(OV_folder_list)):
 	octave_increase = 0
 	while 1:
 		octave_size=(octave_size+200*octave_increase)
@@ -211,7 +216,7 @@ for num in range(0,len(OV_folder_list)):
 #        print(filenames_keys, filenames_values)
 	# print(filenames_keys, filenames_values)
 		if not rerun:
-			dup_find(filenames_keys,filenames_values)
+#			dup_find(filenames_keys,filenames_values)
 			#Creates a TrakEM2 project
 			sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #make substack specific project folder
 			file_list= os.listdir(sub_dir) # get list of all images in substack
@@ -266,78 +271,23 @@ for num in range(0,len(OV_folder_list)):
 			if gui.wasOKed():
 #				print(temp_filenames_keys,temp_filenames_values)
 				print(roi,tiles)
-				filenames_values, filenames_keys, roi, tiles =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
+				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
 #				print(man_fixed_filenames_keys,man_fixed_filenames_values)
 				print(roi,tiles)
 				print("hre")
 				print(filenames_keys)
 				print(filenames_values)
-#				if temp_filenames_values == man_fixed_filenames_values:
-#					pass
-#				else:
-#					fixed_filenames_values=[0]*len(filenames_values)
-#					fixed_filenames_keys=[0]*len(filenames_keys)
-#					for n in range(0, len(man_fixed_filenames_values)):
-#						for m in range(0, len(temp_filenames_values)):
-#							if temp_filenames_values[m] == man_fixed_filenames_values[n]:
-#								fixed_filenames_keys[n]=filenames_keys[m]
-#								fixed_filenames_values[n]=filenames_values[m]
-#								
-#					filenames_keys=[]
-#					filenames_values=[]
-#					filenames_keys=fixed_filenames_keys
-#					filenames_values=fixed_filenames_values
-				transforms, transform_XML=get_patch_transform_data(layerset)
-					#if you accind
-#				
-#can be function get new organization of patches after moving them manually	   
-#				man_moved_tiles=[]
-#				man_moved_paths=[]
-#				for n, layer in enumerate(layerset.getLayers()):
-#					tiles = layer.getDisplayables(Patch)
-#					for tile in tiles:
-#						for n, filename in enumerate(filenames_values:)
-#							if tile.title == filename:
-#								print("hey you found me")
-#								man_moved_tiles.append[tile.title]
-#								man_moved_tiles[n] = filenames_keys[n]
-#							else:
-#								pass
-#				filenames_values
+#				transforms, transform_XML=get_patch_transform_data(layerset)
+				print(transforms)
 				if num > 0:
 				   project.remove(True)  
 				   
-#				xml_file= "image_stack_"+str(n+1)+".xml"
-#					path=os.path.join(transform_folder,xml_file)
-#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-#					transform_file=open(path_w_scaling,"w")
-#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
-#						for line in f:
-#							if re.findall("AffineModel2D", line): # makes directory
-#								data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
-#							   #should only be one line in content
-#								numbers=data_string[0].replace("data=\"","")
-#								numbers=re.findall("[\d.\-E]+", numbers)
-#								if size == 1:
-#									new_x=str(float(numbers[4])/scaling_factor)
-#									new_y=str(float(numbers[5])/scaling_factor)
-#								elif size > 1:
-#									if n == 0:
-#										new_x=str(float(numbers[4])/scaling_factor)
-#										new_y=str(float(numbers[5])/scaling_factor)
-#									elif n > 0:
-#										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
-#										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
-#								new_data_string=data_string[0].replace(numbers[4],new_x)
-#								new_data_string=new_data_string.replace(numbers[5],new_y)
-#								new_content=line.replace(data_string[0],new_data_string)
-#								f2.write(new_content)	
-				
+
 				
 				
 				
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transform_dir,size,scaling_number,roi,num)
+#				save_xml_files(transform_XML, transform_dir,size,scaling_number,roi,num)
 				transform_list.append(transform_dir)
 				scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
@@ -370,6 +320,24 @@ if not rerun:
 	tot_roi = roi_list[0]  # roi of all the roi from each substack
 	for big_tile in roi_list[1:]:
 		tot_roi.add(big_tile)
+	for num in range(0,len(OV_folder_list)):
+		print(scaling_number_list[num], size, tot_roi)
+		save_xml_files(transform_XML, transform_list[num],size,scaling_number_list[num],tot_roi)#,num)
+#		sys.exit()
+#	transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
+#	save_xml_files(transform_XML, transform_dir,size,scaling_number,tot_roi,num)
+#	transform_list.append(transform_dir)
+#	scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
+#	scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+#	scaling_number_file.write(str(scaling_number))
+#	scaling_number_file.close()
+#	tiles_list.append(tiles)
+#	roi.x=int(roi.x*(1/scaling_number))#adjust roi to the appropriate scaling number, this can be put under functions
+#	roi.y=int(roi.y*(1/scaling_number))
+#	roi.width=int(roi.width*(1/scaling_number))
+#	roi.height=int(roi.height*(1/scaling_number))
+#	roi_list.append(roi)
+#	project_list.append(temp_proj_name+"test.xml")
 # 	print(tot_roi)
  	#saves it in first transform folder
  	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
@@ -486,11 +454,11 @@ for num in range(0,len(OV_folder_list)): #check if inverted files exist already
 							sys.exit()
 
 	if inverted_image: #invert images
-		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
+			filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3)
 
 	#resize image
 	if size != 1:
-		if not rerun:
+#		if not rerun:
 			filenames_keys, filenames_values = resize_image(filenames_keys, 
 															filenames_values, 
 															output_scaled, windows, 
@@ -498,7 +466,7 @@ for num in range(0,len(OV_folder_list)): #check if inverted files exist already
 															
 																
 	print(num,"of ",len(OV_folder_list),"substacks processed")
-	# print(filenames_keys, filenames_values)
+	print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
 
@@ -538,6 +506,7 @@ else:
 param.sift.maxOctaveSize = 600
 for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get all tiles
+		tiles[0].setLocked(True) #lock the OV stack
 		AlignTask.alignPatches(
 			param,
 			tiles,
@@ -553,8 +522,8 @@ layerset.setMinimumDimensions() #readjust canvas to only high res tiles
 #remove OV from layers
 remove_OV(layerset,0)
 #exports images
-mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
-exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
+#mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
+#exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
 

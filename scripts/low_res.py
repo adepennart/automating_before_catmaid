@@ -258,11 +258,11 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			if gui.wasOKed():
 				if num > 0:
 					print("hey boi")
-					filenames_values, filenames_keys, roi, tiles =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,False)
 					project.remove(True) 
+				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
 				scaling_number_list.append(scaling_number)
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
-				save_xml_files(transform_XML, transform_dir,scaling_factor=scaling_number,roi=roi,n=num)
+				save_xml_files(transform_XML, transforms, size,scaling_number,roi)#,num)
 				transform_list.append(transform_dir)
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
 				scaling_number_file.write(str(scaling_number))

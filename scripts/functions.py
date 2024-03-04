@@ -332,7 +332,9 @@ def make_dir(filepath=None, dir_name=None, file_var=None, filename=None, windows
 def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern=None, file_start=1):
 	for n, fold in enumerate(filenames_keys[file_start:]):
 		for m, filename in enumerate(filenames_values[file_start:][n]):
+#			print(joint_folder)
 			filepath = os.path.join(fold, filename)
+#			print(filepath)
 			imp = IJ.openImage(filepath)
 			IJ.run(imp, "Invert", "")
 			sub_dir = make_dir(joint_folder, "_"+str(n),
@@ -823,7 +825,7 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 		filenames_keys[0], "virtual")  # open image stack
 	title = imp.getTitle()  # get image stack name
 	# get roi values, with 10px of wiggle room
-#    ROI = imp.setRoi(roi.x-30, roi.y+30, roi.width+30, roi.height-30)
+#	ROI = imp.setRoi(roi.x-30, roi.y+30, roi.width+30, roi.height-30)
 #    print(roi.x, roi.y, roi.width, roi.height)
 	ROI = imp.setRoi(roi.x, roi.y, roi.width, roi.height)
 #    print(imp.getDimensions())
@@ -1066,7 +1068,7 @@ def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=Fal
 "Following is experimental code modified and written to try to implement elastic alignment"
 "author: Viggo Troback"
 
-def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None,n=0):
+def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None):#,n=0):
 
 	for idx, xml_data in enumerate(xml_data_list):
 		# Specify the filename for the XML file (you can customize this as needed)
@@ -1091,16 +1093,32 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 				   #should only be one line in content
 					numbers=data_string[0].replace("data=\"","")
 					numbers=re.findall("[\d.\-E]+", numbers)
+					print(numbers)
+					print(scaling_factor,size,roi)
 					if size == 1:
 						new_x=str(float(numbers[4])/scaling_factor)
 						new_y=str(float(numbers[5])/scaling_factor)
 					elif size > 1:
-						if n == 0:
+						print(idx)
+						if idx == 0:
 							new_x=str(float(numbers[4])/scaling_factor)
 							new_y=str(float(numbers[5])/scaling_factor)
-						elif n > 0:
-							new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
-							new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
+						elif idx == 1:
+							new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+							new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+	#                        
+#							first_numbers=numbers
+#							first_x=new_x
+#							first_y=new_y
+						elif idx > 1:
+							#rescaling the second image and beyond, rescaling isn't to be done with the x or y values, but of the distance 
+							#between the first image and the next image of interest.
+							#then you need to place it where it should be based off the scaled first image
+							#then readjust placement with regrds to the cropped ov stack 
+							#only want to scale where the second image  and beyond with regards to the first image, scale image by finding distance bet
+							new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
+							new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
+					print(new_x,new_y)
 					new_data_string=data_string[0].replace(numbers[4],new_x)
 					new_data_string=new_data_string.replace(numbers[5],new_y)
 					new_content=line.replace(data_string[0],new_data_string)
@@ -1108,7 +1126,8 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 #					f2.write(new_content)
 					xml_file.write(new_content)
 				else:
-					xml_file.write(line)	
+					xml_file.write(line)
+		
 			
 #			xml_file.write(xml_data)
 
@@ -2013,6 +2032,9 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 	man_moved_tiles=[0]*len(temp_filenames_keys)
 	man_moved_paths=[0]*len(temp_filenames_keys)
 	roi_list=[]
+	# Create a dictionary to store transformation data for each tile
+	transformation_data = {}
+	transformation_files =[]
 	for layer in layerset.getLayers():
 		tiles = layer.getDisplayables(Patch)
 		for n, tile in enumerate(tiles):
@@ -2022,7 +2044,15 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 #					print("hey you found me")
 					man_moved_tiles[n]=filenames_values[m]
 					man_moved_paths[n] = filenames_keys[m]
-#					print(man_moved_paths, "switch")
+					# Get the transformation for the tile
+					transform = tile.getFullCoordinateTransform()
+#            print(transform)
+			# Store the transformation data for the tile
+					transformation_data[n] = transform
+					transformation_files.append(transform.toXML(""))
+	
+					
+					print(man_moved_paths, "switch")
 				else:
 					pass
 			if roi:
@@ -2037,5 +2067,5 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 #				roi_list.append(roi)
 #	roi = roi_list
 	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles 
-		return man_moved_tiles, man_moved_paths, roi, tiles
-	return man_moved_tiles, man_moved_paths
+		return man_moved_tiles, man_moved_paths, roi, tiles, transformation_data, transformation_files
+	return man_moved_tiles, man_moved_paths, transformation_data, transformation_files
