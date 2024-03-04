@@ -115,6 +115,7 @@ proj_folds=[]
 project=''
 octave_increase=0
 transform_list=[]
+transform_xml_list=[]
 #additional processing variables (gaussian blur, CLAHE )
 sigmaPixels=0.7
 blocksize = 300
@@ -288,6 +289,7 @@ for num in range(0,len(OV_folder_list)):
 				
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
 #				save_xml_files(transform_XML, transform_dir,size,scaling_number,roi,num)
+				transform_xml_list.append(transform_XML)
 				transform_list.append(transform_dir)
 				scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
 				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
@@ -322,7 +324,7 @@ if not rerun:
 		tot_roi.add(big_tile)
 	for num in range(0,len(OV_folder_list)):
 		print(scaling_number_list[num], size, tot_roi)
-		save_xml_files(transform_XML, transform_list[num],size,scaling_number_list[num],tot_roi)#,num)
+		save_xml_files(transform_xml_list[num], transform_list[num],size,scaling_number_list[num],tot_roi)#,num)
 #		sys.exit()
 #	transform_dir=make_dir(transform_dir_big,"substack_"+str(num))
 #	save_xml_files(transform_XML, transform_dir,size,scaling_number,tot_roi,num)
