@@ -64,14 +64,32 @@ Invert images
 octave_size
 Model_index
 using a windows machine
-run test(if OV has not been inverted)
+script previously run (alignment parameter saved in file)
 Elastic Alignment
 Unorganized input
 ```
 
-
-INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
-
+INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+```
+++------/input
++	+------/OV
++		+------/OV1
++			+------/ov1_1_.tif
++			+------/ov1_2_.tif
++			+------[...]
++			+------/ov1_n_.tif
++		+------/OV2
++			+------/ov2_1_.tif
++			+------/ov2_2_.tif
++			+------[...]
++			+------/ov2_n_.tif
++		+------/[...]
++		+------/OVn
++			+------/ovn_1_.tif
++			+------/ovn_2_.tif
++			+------[...]
++			+------/ovn_n_.tif
+```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
 PROJECT NAME, chosen name for your Trackem2 project.
@@ -84,7 +102,11 @@ MODEL_INDEX, choice of alignment between translation, rigid, similarity and affi
 
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
-RUN TEST(IF OV HAS NOT BEEN INVERTED) specify whether you would like to run a test to check if alignment will work.
+SCRIPT PREVIOUSLY RUN (alignment parameter saved in file), Select when rerunning script, i.e., when a previous run crashes before the end.
+
+ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
+
+UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly organize files for alignment.
 
 ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
 
@@ -98,20 +120,97 @@ low resolution directory
 high resolution directory
 Output directory
 project name
-Invert HR images
+Invert high resolution images
 low resolution rescale factor
 octave_size
 Model_index
 using a windows machine
-run test(if your low resolution has not been rescaled)
+script previously run (alignment parameter saved in file)
 Elastic Alignment
 Unorganized input
 ```
 
-LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+```
+++------/input
++	+------/OV
++		+------/OV1
++			+------/ov1_1_.tif
++			+------/ov1_2_.tif
++			+------[...]
++			+------/ov1_n_.tif
++		+------/OV2
++			+------/ov2_1_.tif
++			+------/ov2_2_.tif
++			+------[...]
++			+------/ov2_n_.tif
++		+------[...]
++		+------/OVn
++			+------/ovn_1_.tif
++			+------/ovn_2_.tif
++			+------[...]
++			+------/ovn_n_.tif
+```
 
 HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+```
+++------/input
++	+------/NO
++		+------/NO1
++			+------/NO1_tile1
++				+------/no1_tile1_1_.tif
++				+------/no1_tile1_2_.tif
++				+------[...]
++				+------/no1_tile1_n_.tif
++			+------/NO1_tile2
++				+------/no1_tile2_1_.tif
++				+------/no1_tile2_2_.tif
++				+------[...]
++				+------/no1_tile2_n_.tif
++			+------[...]
++			+------/NO1_tilen
++				+------/no1_tilen_1_.tif
++				+------/no1_tilen_2_.tif
++				+------[...]
++				+------/no1_tilen_n_.tif
++		+------/NO2
++			+------/NO2_tile1
++				+------/no2_tile1_1_.tif
++				+------/no2_tile1_2_.tif
++				+------[...]
++				+------/no2_tile1_n_.tif
++			+------/NO2_tile2
++				+------/no2_tile2_1_.tif
++				+------/no2_tile2_2_.tif
++				+------[...]
++				+------/no2_tile2_n_.tif
++			+------[...]
++			+------/NO2_tilen
++				+------/non_tilen_1_.tif
++				+------/non_tilen_2_.tif
++				+------[...]
++				+------/no2_tilen_n_.tif
++		+------/[...]
++		+------/NOn
++			+------/NOn_tile1
++				+------/non_tile1_1_.tif
++				+------/non_tile1_2_.tif
++				+------[...]
++				+------/non_tile1_n_.tif
++			+------/NOn_tile2
++				+------/non_tile2_1_.tif
++				+------/non_tile2_2_.tif
++				+------[...]
++				+------/non_tile2_n_.tif
++			+------[...]
++			+------/NOn_tilen
++				+------/non_tilen_1_.tif
++				+------/non_tilen_2_.tif
++				+------[...]
++				+------/non_tilen_n_.tif
 
+++++++++++++++++++++++++++++++++++++++++++++++++++
+```
 OUTPUT DIRECTORY, an empty directory where output images will be placed.
 
 PROJECT NAME, chosen name for your Trackem2 project.
@@ -126,7 +225,7 @@ MODEL_INDEX, choice of alignment between translation, rigid, similarity and affi
 
 USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
-RUN TEST specify whether you would like to run a test to check if alignment will work.
+SCRIPT PREVIOUSLY RUN (alignment parameter saved in file), Select when rerunning script, i.e., when a previous run crashes before the end.
 
 ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
 
@@ -165,16 +264,16 @@ IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or us
 Below is an example of the inputs needed for the high-resolution script to get the outputs seen in the output folder. 
 
 ```
-low resolution directory: OV folder
-high resolution directory:  No folder
-Output directory: output folder
+low resolution directory: OV 
+high resolution directory:  NO 
+Output directory: output 
 project name: NO_test
-Invert HR images: √
+Invert high resolution images: √
 low resolution rescale factor: 1
 octave_size: 500
 Model_index: translation
-using a windows machine: unchecked (if not using mac)
-run test(if your low resolution has not been rescaled): √
+using a windows machine: unchecked (if not using windows)
+script previously run (alignment parameter saved in file) unchecked
 Elastic Alignment: unchecked
 Unorganized input: unchecked
 ```
