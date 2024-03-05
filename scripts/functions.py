@@ -234,7 +234,7 @@ def file_find(all_folder_list=None, pattern_1=None, pattern_2=None):
 		if not file_list:  # checks second pattern
 			file_list = filter(pattern_1.match, os.listdir(fold))
 		filenames_keys.append(fold)
-		filenames_values.append(file_sort(file_list))
+		filenames_values.append(file_sort(file_list,-1))
 	for num in range(0, len(filenames_keys)):  # checks whether any images were found
 		if not filenames_keys[num] or not filenames_values[num]:
 			print("ERROR: no files found, check folder or pattern")
