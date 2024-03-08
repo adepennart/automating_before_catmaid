@@ -523,13 +523,15 @@ project.saveAs(os.path.join(sub_dir, temp_proj_name+"re_aligned"), False) #save 
 layerset.setMinimumDimensions() #readjust canvas to only high res tiles
 #remove OV from layers
 remove_OV(layerset,0)
+
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+
 #exports images
 #mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
 #exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
 
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
 
 optionalClosingAndDeleting(project,output_dir,project_name)
 
