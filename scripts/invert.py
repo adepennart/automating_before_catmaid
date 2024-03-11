@@ -185,9 +185,9 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 						pass
 					elif not gui.wasOKed():
 						sys.exit()
-		print(len(filenames_values[0:][0]))
-		print(len(filenames_values[0:][0][file_start:]))
-		print((filenames_values[0:][0][file_start:]))
+		# print(len(filenames_values[0:][0]))
+		# print(len(filenames_values[0:][0][file_start:]))
+		# print((filenames_values[0:][0][file_start:]))
 #		sys.exit()
 		for n, fold in enumerate(filenames_keys[0:]):
 			for m, filename in enumerate(filenames_values[0:][n][file_start:]):
@@ -195,10 +195,10 @@ for num in range(0,len(OV_folder_list)): #this is for adjusting images to be cro
 #				if m >= file_start:
 #					print(joint_folder)
 					filepath = os.path.join(fold, filename)
-					print(filepath)
+					# print(filepath)
 					imp = IJ.openImage(filepath)
 					IJ.run(imp, "Invert", "")
-					print(imp)					
+					# print(imp)					
 					sub_dir = make_dir(output_inverted, "_"+str(n),
 									   imp, "/"+str(n)+"_"+str(m+file_start), windows, True)
 
