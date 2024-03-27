@@ -1,7 +1,7 @@
 """
 Title: functions.py
 
-Date: February 9th, 2023
+Date: March 27th, 2024
 
 Author: Auguste de Pennart
 
@@ -72,19 +72,14 @@ from ij.gui import GUI
 # could be useful for threads/ flushing image cache
 from java.lang import Runtime
 from java.util.concurrent import Executors, TimeUnit
-
-
 # align 
 from ini.trakem2.utils import Filter
+#transform
+import register_virtual_stack.Transform_Virtual_Stack_MT as Transform_VS
 
 import copy
 
-#boundingbox
-#from mpicbg.spim.data.generic.base import XmlIoSingleton#XmlIoBoundingBoxes
-#from spim.fiji.spimdata.boundingbox import XmlIoBoundingBoxes 
-#from spim.fiji.spimdata.boundingbox import BoundingBoxes
-# func: flushes image cache
-
+# func: supposedly releases cache memory
 
 def releaseAll():
 	Project.getProjects()[0].getLoader().releaseAll()
@@ -100,8 +95,6 @@ def releaseAll():
 # #outputs:
 #	joint_folder:
 #		mutual parent folder
-
-
 def mut_fold(folder_1=None, folder_2=None, windows=None):
 	#	variables
 	joint_folder = []
@@ -114,12 +107,10 @@ def mut_fold(folder_1=None, folder_2=None, windows=None):
 	elif not windows:
 		match_1 = re.findall("\/.[^\/]+", folder_1)
 		match_2 = re.findall("\/.[^\/]+", folder_2)
-#	print(match_1, match_2)
 	for Folder in reversed(match_1):  # finds that smallest mutual directory
 		if Folder in match_2:
 			joint_folder.insert(0, Folder)
 	joint_folder = "".join(joint_folder)
-#	print(joint_folder)
 	return joint_folder
 
 
@@ -138,34 +129,28 @@ def file_sort(file_list=None, sort_by_digit=0, rev=False):
 	for n, filename in enumerate(file_list):
 		for m, filename_2 in enumerate(file_list[n+1:len(file_list)]):
 			try:
-				match = int(re.findall("(\d+)", str(filename))[sort_by_digit])
+				match = int(re.findall("(\d+)", str(filename))[sort_by_digit]) #looks for digits
 				match_2 = int(re.findall(
 					"(\d+)", str(filename_2))[sort_by_digit])
 			except IndexError:
 				print(" ERROR: Currently only works with filenames containing digits")
 				sys.exit("Currently only works with filenames containing digits")
-#			print(filename,filename_2)
 			if not rev:
 				if match > match_2:
 					temp_1 = filename
 					temp_2 = filename_2
-	#				print(filename,filename_2)
 					filename = temp_2
 					filename_2 = temp_1
 					file_list[n] = temp_2
 					file_list[n+m+1] = temp_1
-	#				print(filename,filename_2)
 			if rev:
 				if n < n+1:
-					#				if match < match_2:
 					temp_1 = filename
 					temp_2 = filename_2
-#					print(filename,filename_2)
 					filename = temp_2
 					filename_2 = temp_1
 					file_list[n] = temp_2
 					file_list[n+m+1] = temp_1
-	#				print(filename,filename_2)
 	return file_list
 
 # func: makes filepath list
@@ -179,24 +164,19 @@ def file_sort(file_list=None, sort_by_digit=0, rev=False):
 # outputs:
 #	all_folder_list:
 #		list of folders
-
-
 def folder_find(loop_fold=None,  windows=None, append_fold=None):
 	#	variables
 	all_folder_list = []
 	filenames = os.listdir(loop_fold)
 	for filename in filenames:  # creates filepaths for each subdirectory in loop_fold
-		#	fix if not mac
 		if windows:
 			filename = loop_fold+"\\"+filename
 		elif not windows:
 			filename = loop_fold+"/"+filename
-#		print(filename) 
 		if os.path.isdir(filename):
 			print("found folder")
 			all_folder_list.append(filename)
 	# if no folders found loop_fold, assumes this is instead the folder to find files
-	
 	if len(all_folder_list) == 0:
 		all_folder_list.append(loop_fold)
 	# appends folders for the beginning of list (folders assumed to contain files of interest)
@@ -283,10 +263,6 @@ def dup_find(filenames_keys=None, filenames_values=None):
 # outputs:
 #	new_dir:
 #		the new directory filepath
-# to fix:
-# is a one file saver option needed?
-
-
 def make_dir(filepath=None, dir_name=None, file_var=None, filename=None, windows=None, savefile=False):
 	new_dir = os.path.join(filepath, dir_name)  # make new directory
 	try:  # if error, directory already exists
@@ -327,19 +303,14 @@ def make_dir(filepath=None, dir_name=None, file_var=None, filename=None, windows
 #		file paths
 #	filenames_values:
 #		file names
-
-
 def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern=None, file_start=1):
 	for n, fold in enumerate(filenames_keys[file_start:]):
 		for m, filename in enumerate(filenames_values[file_start:][n]):
-#			print(joint_folder)
 			filepath = os.path.join(fold, filename)
-#			print(filepath)
 			imp = IJ.openImage(filepath)
 			IJ.run(imp, "Invert", "")
 			sub_dir = make_dir(joint_folder, "_"+str(n),
 							   imp, "/"+str(n)+"_"+str(m), windows, True)
-#			print(sub_dir)
 			NO_file = filter(pattern.match, os.listdir(sub_dir))
 			NO_file = file_sort(NO_file)
 			filenames_keys[n+file_start] = sub_dir
@@ -363,27 +334,20 @@ def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 #		all layers in trakem2 project
 # fix:
 #	merge this and following function
-
-
-def add_patch(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None): #layerset=None,
+def add_patch(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None): 
 	layerset = project.getRootLayerSet()#get the layerset
-
 	for i in range(start_lay,tot_lay):#add to the layerset the desired amount of layers 
 		layerset.getLayer(i, 1, True)
 	for i ,layer in enumerate(layerset.getLayers()): #add images to each layer
 		for n, fold in enumerate(filenames_keys):
-			#print(fold)
-			#print(filenames_values[n][i-start_lay])
 			filepath = os.path.join(fold, filenames_values[n][i-start_lay])
-			#print(filepath)
 			patch = Patch.createPatch(project, filepath)
 			layer.add(patch)
-			layer.setOverlay(None)
-			#print(patch)
+			layer.setOverlay(None) #unsure what this does
 			layer.recreateBuckets() #update layerset?
 	return layerset
 
-# func: adds images to each layer in trakem2
+# func: adds images to each layer in trakem2 with additional feature to specify from which layer to start adding images at
 # inputs:
 #	filenames_keys:
 #		file paths
@@ -395,11 +359,12 @@ def add_patch(filenames_keys=None, filenames_values=None, project=None, start_la
 #		start point for first layer (should be zero)
 #	tot_lay:
 #		how many layers to be made
+#	transform_folder:
+#		directory of transform coordinates
 # outputs:
 #	layerset:
 #		all layers in trakem2 project
-
-def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None,transform_folder=None,scaling_factor=1,size=1,roi=None):  # layerset=None,
+def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None,transform_folder=None):
 	layerset = project.getRootLayerSet()  # get the layerset
 	for i in range(start_lay, tot_lay):  # add to the layerset the desired amount of layers
 		layerset.getLayer(i, 1, True)
@@ -409,47 +374,14 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 				if transform_folder:
 					xml_file= "image_stack_"+str(n+1)+".xml"
 					path=os.path.join(transform_folder,xml_file)
-#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-#					transform_file=open(path_w_scaling,"w")
-#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
-#						for line in f:
-#							if re.findall("AffineModel2D", line): # makes directory
-#								data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
-#							   #should only be one line in content
-#								numbers=data_string[0].replace("data=\"","")
-#								numbers=re.findall("[\d.\-E]+", numbers)
-#								if size == 1:
-#									new_x=str(float(numbers[4])/scaling_factor)
-#									new_y=str(float(numbers[5])/scaling_factor)
-#								elif size > 1:
-#									if n == 0:
-#										new_x=str(float(numbers[4])/scaling_factor)
-#										new_y=str(float(numbers[5])/scaling_factor)
-#									elif n > 0:
-#										new_x=str((int(float(numbers[4]))-int(float(roi.x)))*size/scaling_factor+int(float(roi.x))*size/scaling_factor)#-roi.x*size)#/scaling_factor)
-#										new_y=str((int(float(numbers[5]))-int(float(roi.y)))*size/scaling_factor+int(float(roi.y))*size/scaling_factor)#-roi.y*size)#/scaling_factor)
-#								new_data_string=data_string[0].replace(numbers[4],new_x)
-#								new_data_string=new_data_string.replace(numbers[5],new_y)
-#								new_content=line.replace(data_string[0],new_data_string)
-#								f2.write(new_content)	
-#							else:
-#								f2.write(line)
-#					transform = Transform_VS.readCoordinateTransform(path_w_scaling)
 					transform = Transform_VS.readCoordinateTransform(path)
 				filepath = os.path.join(fold, filenames_values[n][i-start_lay])
 				patch = Patch.createPatch(project, filepath)
 				if transform_folder:
 					patch.setCoordinateTransform(transform)
 				layer.add(patch)
-#                patch.updateMipMaps()
-		#		print(patch)
 			layer.recreateBuckets()  # update layerset?
 	return layerset
-
-
-
-
-
 
 # func: preps images for a test align to see if parameters chosen work with images
 # inputs:
@@ -467,13 +399,13 @@ def add_patch_v2(filenames_keys=None, filenames_values=None, project=None, start
 #		whether to invert image or not
 #	size:
 #		transform factor (ie. make it 4 times as small)
+#	empty:
+#		for high_res.py adds a directory for test high res images
 # outputs:
 #	temp_filenames_keys:
 #		file paths
 #	temp_filenames_values:
 #		file names
-
-
 def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None, windows=None, project_name=None, invert_image=False, size=None,empty=False):
 	temp_filenames_keys = []
 	temp_filenames_values = []
@@ -481,32 +413,27 @@ def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None
 	temp_filenames_values += filenames_values
 	test_interim = make_dir(
 		test_folder, "substack_"+re.findall("\d+", project_name)[-1])  # makes directory
-#	for num in range(1,len(filenames_keys)):#do we need this for NO?
 	if empty:
 		sub_dir = make_dir(test_interim, "_"+str(0))
 	for num in range(0, len(filenames_keys)):  # resizes and inverts images
-		#		print(filenames_values[num][0])
 		# this (also in invert) could become funciton
 		path = os.path.join(filenames_keys[num], filenames_values[num][0])
 		imp = IJ.openImage(path)
 		title = imp.getTitle()
 		if size:
 			if size != 1:  # resizes image to smaller rather larger
-				old_dim = imp.getDimensions()
 				width = int((imp.getDimensions()[0])*(float(1)/float(size)))
 				height = int((imp.getDimensions()[1])*(float(1)/float(size)))
 				# resize images
 				interpolation_method = "Bicubic" 
-		  
 				imp = imp.resize(width, height, interpolation_method)
-	#			print("old height is "+str(old_dim.height), "new height is "+str(imp.getDimensions().height))
 		if invert_image:  # inverts image
 			IJ.run(imp, "Invert", "")
 		# makes directory and saves file
 		if empty:
 			sub_dir = make_dir(test_interim, "_"+str(num+1),
 							   imp, str(num)+"_"+title, windows, True)
-		if not empty:
+		elif not empty:
 			sub_dir = make_dir(test_interim, "_"+str(num),
 							   imp, title, windows, True)
 		temp_filenames_keys[num] = sub_dir  # reasigns new filepath and image
@@ -523,12 +450,14 @@ def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None
 #		all the layers in trakem2 project
 #	OV_lock:
 #		accounts for difference between low res and high res alignments
+#	transform:
+#		get coordinates of the transformed images
 # outputs:
 #	roi:
 #		this is the roi per image stack in filenames_key
 #	tiles:
 #		trakem2 images in layer
-# to fix:
+# to consider for elastic:
 #	furture elastic montage parameters:
 	# block matching
 	# patch scale 0.2
@@ -547,8 +476,6 @@ def prep_test_align(filenames_keys=None, filenames_values=None, test_folder=None
 	# spring mesh= default
 	# sift based proemontage
 	# feature descriptin defautl
-
-
 def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None,transform=False):
 	# variables
 	non_move = []
@@ -579,20 +506,8 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 	for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get all tiles
 		layerset.setMinimumDimensions()  # readjust canvas size
-#        if OV_lock:  # here we are linking each image to the previous image of the same stack
-#            if n == 0:
-#                old_tiles = tiles
-#            if n > 0:
-#                for n, old_tile in enumerate(old_tiles):
-#                    for m, tile in enumerate(tiles):
-#                        if n == m:
-#                            old_tile.link(tile)
-#                            break
-#                    old_tiles = tiles
-					# print(tile.isLinked())
 		tiles[0].setLocked(True)  # lock the OV stack
-		# i believe tihs is what they are looking for
-		non_move.append(tiles[0])
+		non_move.append(tiles[0]) 	# i believe tihs is what they are looking for
 	for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get  all tiles of layer
 		AlignTask.alignPatches(
@@ -603,195 +518,21 @@ def align_layers(model_index=None, octave_size=None, layerset=None, OV_lock=None
 			False,
 			False,
 			False)
-		
-		#Blending.blend(set(tiles), 0)
-		
 		if OV_lock:  # could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-			# for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
-			# 	for m, tile_2 in enumerate(tiles[n:]):
-			# 		tile.link(tile_2)
 			for tile in tiles[0:]:  # roi for each stack of images is collected
-				print(tile.getBoundingBox())
 				roi = tile.getBoundingBox()  # needed in OV alignment
 				roi_list.append(roi)
 			roi = roi_list
-		if not OV_lock:  # roi for each stack of images is collected
-#            roi = tiles[1].getBoundingBox()  # needed in OV alignment
-#            print(roi,"before")
-#            print(tiles[1].getBoundingBox())
+		if not OV_lock:  # roi for each stack of images, except the first, is collected (i.e. only high res images)
 			for n, tile in enumerate(tiles[1:]):
-				print(tile.title)
 				if n == 0:
 					roi = tile.getBoundingBox()  # needed in OV alignment	
 				else:
 					roi.add(tile.getBoundingBox())
-#                print(tile.getBoundingBox())
-#            print(roi,"after")
 		if transform:
 			transforms, transform_XML=get_patch_transform_data(layerset)
 			return  roi, tiles, transforms, transform_XML
 	return roi, tiles
-
-
-# func: this one is a two parter
-# first correct all negative coordinates to positive ones
-# second: find the overlap area(s) and creates another list with all the associated inout roi for each overlap
-# inputs:
-#	roi:
-#		this takes a list of rois
-# outputs:
-#	overlap_list:
-#		list of overlap roi between each montaged image (ie. trakem2 montaged images )
-#	assoc_x_list:
-#		list which gives the associated overlap roi which each roi from input
-# 		ie. both list have the same order
-# to fix:
-#	should use copy_roi=roi[:] to increase efficiency
-
-
-def overlap_area(ROI=None):
-	# variables
-	x_list = []
-	y_list = []
-	new_x_list = []
-	new_y_list = []
-	width_list = []
-	height_list = []
-	match_x = 0
-	match_y = 0
-	new_roi = []
-	roi_list = []
-	new_roi_list = []  # made to add crop areas after
-	big_dif = False
-	overlap_list = []
-	temp_overlap_list = []
-	assoc_x_list = []
-	new_x = ""
-	# this could be more efficient by just copying roi to copy_roi=roi[:]
-	for n, r in enumerate(ROI):  # makes new lists for each parameter of an roi
-		x_list.append(r.x)
-		y_list.append(r.y)
-		width_list.append(r.width)
-		height_list.append(r.height)
-	# print(x_list,y_list,width_list, height_list)
-	# finds x coordinates that are negative (less than match_x=0)
-	for x in x_list:
-		if x < match_x:
-			match_x = 0 + x
-	if match_x:  # if a negative value found, converts all x values to positive my adding the largest negative x value to all the other values
-		for x in x_list:
-			#print("found -", x-match_x)
-			new_x = x - match_x
-			new_x_list.append(new_x)
-	else:
-		new_x_list = x_list
-	for y in y_list:  # the same above is repeated for y coordinates
-		if y < match_y:
-			match_y = 0 + y
-	if match_y:
-		for y in y_list:
-			new_y = y - match_y
-			new_y_list.append(new_y)
-	else:
-		new_y_list = y_list
-	# for n, x in enumerate(new_x_list): #resorts
-	# 	for x2 in new_x_list[n+1:]:
-	# 		print("here i am")
-	# 		print(x,x2)
-	# 		if x2 < x:
-	# 			print("this is unusual")
-	# 			new_x_list=file_sort(new_x_list, -1) #needed
-	# with a simple copy of roi the file_sort function could be used
-	# a sort function, like the file_sort function, that works on x coordinates however also changes y,width,height
-	for n, x in enumerate(new_x_list):
-		for m, x2 in enumerate(new_x_list[n+1:len(new_x_list)]):
-			try:  # finds correct order via digit size
-				match = int(re.findall("(\d+)", str(x))[0])
-				match_2 = int(re.findall("(\d+)", str(x2))[0])
-			except IndexError:
-				print(" ERROR: Currently only works with filenames containing digits")
-				sys.exit("Currently only works with filenames containing digits")
-#			print(filename,filename_2)
-			if match > match_2:
-				temp_1 = x
-				temp_2 = x2
-#				print(filename,filename_2)
-				x = temp_2
-				x2 = temp_1
-				new_x_list[n] = temp_2
-				new_x_list[n+m+1] = temp_1
-				y_temp = new_y_list[n]
-				new_y_list[n] = new_y_list[n+m+1]
-				new_y_list[n+m+1] = y_temp
-				width_temp = width_list[n]
-				width_list[n] = width_list[n+m+1]
-				width_list[n+m+1] = width_temp
-				height_temp = height_list[n]
-				height_list[n] = height_list[n+m+1]
-				height_list[n+m+1] = height_temp
-#				print(filename,filename_2)
-	# creates a new roi with all 4 roi parameters
-	for index in range(0, len(new_x_list)):
-		new_roi.append(new_x_list[index])
-		new_roi.append(new_y_list[index])
-		new_roi.append(width_list[index])
-		new_roi.append(height_list[index])
-		roi_list.append(new_roi)
-		new_roi = []
-	for i in range(0, len(roi_list)):  # makes new roi list, could use simple copying here
-		new_roi_list.append(i)
-	for n, x in enumerate(new_x_list):
-		for roi in roi_list:  # reorders roi list?
-			if x == roi[0]:
-				new_roi_list[n] = roi
-	# print(new_roi_list)
-	# nothing in place for y
-	# this step is in place to state function handles only horizontal alignments for now
-	for n, y in enumerate(y_list):
-		for y2 in y_list[n+1:]:
-			if abs(abs(y) - abs(y2)) > 1000:
-				big_dif = True
-	if big_dif:
-		gui = GUI.newNonBlockingDialog("Y_axis_overlap?")
-		gui.addMessage(
-			" It seems that images may be aligned vertically, as opposed to horizontally. Is this correct?")
-		gui.showDialog()
-		if gui.wasOKed():
-			print("ERROR: Currently does not handle vertical overlap")
-			sys.exit("Currently does not handle vertical overlap")
-		elif not gui.wasOKed():
-			pass
-#	print(new_x_list,new_y_list,width_list, height_list)
-	# section which images overlap to create overlap rois
-	for n, x in enumerate(new_roi_list):
-		for x2 in new_roi_list[n+1:]:
-			# print(x,x2)
-			if x[0]+x[2] > x2[0]:
-				new_x = [] + x
-				new_x[0] = x2[0] - x[0]  # both the new_x parameters have to been minus x[0] because if you have more than 2 images the x values will be with regards to the trakem2 postion and when cropping the parameters will be out of bounds when looking at a single image
-#				new_x[2]=x[2]-x[0]
-				new_x[2] = x[2]-(x2[0]-x[0])  # creates the overlap area length
-				# print(new_x)
-				temp_overlap_list.append(new_x)
-		if len(temp_overlap_list) > 1:  # only accomodates one overlap
-			print("ERROR: 3 of your images are overlapping, currently cannot accomodate")
-			sys.exit(
-				"3 of your images are overlapping, currently cannot accomodate")
-		elif len(temp_overlap_list) == 1:  # the overlap roi list is made
-			overlap_list.append(temp_overlap_list[0])
-			# finds the associated roi to the new overlap roi
-			for m, link in enumerate(x_list):
-				#print(link-match_x, x[0])
-				if link-match_x == x[0]:  # this retrieves the old roi value
-					#print(link-match_x, x[0])
-					assoc_x_list.append(
-						[link, y_list[m], width_list[m], height_list[m]])
-			temp_overlap_list = []
-		if not overlap_list:
-			print("ERROR: expecting overlap")
-			sys.exit("expecting overlap")
-	#print(overlap_list, assoc_x_list)
-	return overlap_list, assoc_x_list
 
 # func: resizes image
 # inputs:
@@ -816,32 +557,18 @@ def overlap_area(ROI=None):
 #		file paths
 #	filenames_values:
 #		file names
-
-
-def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, size=None, roi=None):  # layerset=None, project=None
-#    print(filenames_keys, filenames_values, joint_folder, windows, project_name, pattern, size, roi)
-	
+def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, size=None, roi=None): 
 	imp = plugin.FolderOpener.open(
 		filenames_keys[0], "virtual")  # open image stack
 	title = imp.getTitle()  # get image stack name
-	# get roi values, with 10px of wiggle room
-#	ROI = imp.setRoi(roi.x-30, roi.y+30, roi.width+30, roi.height-30)
-#    print(roi.x, roi.y, roi.width, roi.height)
 	ROI = imp.setRoi(roi.x, roi.y, roi.width, roi.height)
-#    print(imp.getDimensions())
-#    print(size)
 	imp = imp.crop("stack")  # crop image to new roi
 	old_dim = imp.getDimensions()
-#    print(imp.getDimensions())
 	# change image dimensions by specified factor
 	width = imp.getDimensions()[0]*size
 	height = imp.getDimensions()[1]*size
-#    print(width,height)
-	# resize images
 	# resize image to changed image dimensions
 	imp = imp.resize(width, height, "none")
-#    print(imp.getDimensions())
-	
 	Title = imp.setTitle("")  # create new image stack name
 	# save to specified directory
 	output_scaled = make_dir(joint_folder, "_0", imp, title, windows, True)
@@ -853,137 +580,10 @@ def resize_image(filenames_keys=None, filenames_values=None, joint_folder=None, 
 	filenames_values[0] = OV_file
 	return filenames_keys, filenames_values
 
-# func: this one is a two parter
-# first cropping the images(all images but the rightmost one)
-	# this part requires that the crop area be specified drawing from outputs of the overlap_area function
-# second: then moving the rightmost folder from the inv to crop folder, this will faciliate if the script half way through
-	# and so you can rerun immediately from the crop folder, no need to move them around
-# inputs:
-#	filenames_keys:
-#		file paths
-#	filenames_values:
-#		file names
-#	joint_folder:
-#		parent directory
-#	windows:
-#		running on windows or not
-#	project_name:
-#		name of project
-#	pattern:
-#		specified pattern to look for when finding files
-#	roi:
-	#	this is the roi  per image stack in filenames_key
-#	crop_roi:
-	#	this is the area to be cropped from all images but rightmost
-#	assoc_roi:
-#		this gives you the associated crop roi for each roi
-# outputs:
-#	filenames_keys:
-	#
-#	filenames_values:
-	#
-
-
-def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, roi=None, crop_roi=None, assoc_roi=None):  # layerset=None, project=None
-	# variables
-	# items in this list will be removed with each crop so that the right most image can be found
-	filenames_keys_copy = filenames_keys[:]
-	# basically in place for when the overlay and directories aren't same order so that these two things can be properly associated when making the right most image folder in crop folder
-	numbered = list(range(0, len(roi)))
-	#print(filenames_keys, numbered)
-	# for loop to find each roi and its associated crop_roi via assoc_roi
-	for m, r in enumerate(roi):
-		for n, assoc_r in enumerate(assoc_roi):
-			# print(r,assoc_r)
-			# assuming there is no two images at the same x coordinate, which there shouldn't
-			if r.x == assoc_r[0]:
-				# print(r,assoc_r)
-				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual")
-				title = imp.getTitle()
-				# cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0])) # adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
-				# adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
-				cropper = int(float(0.4)*float(crop_roi[n][2]))
-				# print("cropper",cropper)
-				# print(imp.getDimensions())
-				# print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
-				# set up crop roi
-				ROI = imp.setRoi(
-					0, 0, crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper, crop_roi[n][3])
-#				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+100,crop_roi[n][3]);
-				imp = imp.crop("stack")  # crop
-				# this way name does not change between folders, if the order of the folders is not the order of the overlay
-				# make sub output directory
-				output_scaled = make_dir(
-					joint_folder, "_"+str(m), imp, title, windows, True)
-				# find the new cropped images in the new output directory
-				OV_file = filter(pattern.match, os.listdir(output_scaled))
-				# sort so that they are in numerical order
-				OV_file = file_sort(OV_file)
-				# print(filenames_keys[m])
-				# remove the cropped folder from the copy folder
-				filenames_keys_copy.remove(filenames_keys[m])
-				# remove the cropped folder number from the copy folder
-				numbered.remove(m)
-				# print(numbered)
-				filenames_keys[m] = output_scaled  # update filenames_keys
-				filenames_values[m] = OV_file  # update filename_values
-			# have to make a complimentary function, where when all roi are found remove, the none found one gets added to the crop directory
-	# inverted_subs=folder_find(output_inverted,windows)
-	# print(filenames_keys_copy)
-	match = int(re.findall("(\d+)", str(filenames_keys_copy))
-				[-1])  # finds right most image
-	# print(inverted_subs)
-	# print(match)
-	if windows:
-		# creates new name and filepath for right most image
-		incrop = joint_folder+"/_"+str(match)
-		try:  # if this image folder already exists will ask to overwrite it
-			dest = shutil.move(filenames_keys_copy[0], joint_folder)
-		except shutil.Error:
-			gui = GUI.newNonBlockingDialog("Overwrite?")
-			gui.addMessage(" Press ok to overwrite crop substack folder?")
-			gui.showDialog()
-			if gui.wasOKed():
-				match_1 = re.findall(".[^\\\\]+", filenames_keys_copy[0])[-1]
-				shutil.rmtree(joint_folder+match_1)
-				dest = shutil.move(filenames_keys_copy[0], joint_folder)
-			elif not gui.wasOKed():
-				sys.exit()
-		# print(filenames_keys)
-		# print(numbered,"here")
-		filenames_keys[numbered[0]] = incrop
-		# print(incrop)
-		# print(filenames_keys)
-	elif not windows:  # same as above but for not window machines
-		incrop = joint_folder+"/_"+str(match)
-		# print(incrop)
-		# print(inverted_subs[-1])
-		try:
-			dest = shutil.move(filenames_keys_copy[0], joint_folder)
-		except shutil.Error:
-			gui = GUI.newNonBlockingDialog("Overwrite?")
-			gui.addMessage(" Press ok to overwrite crop substack folder?")
-			gui.showDialog()
-			if gui.wasOKed():
-				match_1 = re.findall("\/.[^\/]+", filenames_keys_copy[0])[-1]
-				shutil.rmtree(joint_folder+match_1)
-				dest = shutil.move(filenames_keys_copy[0], joint_folder)
-			elif not gui.wasOKed():
-				sys.exit()
-		print(filenames_keys, filenames_values)
-		print(numbered, "here")
-		filenames_keys[numbered[0]] = incrop
-		# print(incrop)
-		#print(filenames_keys)
-		
-	return filenames_keys, filenames_values
-
 # func: removes trakem2 tiles
 # #inputs:
 #	tiles:
 #		trakem2 tiles from a layer
-
-
 def remove_tiles(tiles=None):
 	for tile in tiles:
 		tile.remove(False)
@@ -994,142 +594,56 @@ def remove_tiles(tiles=None):
 #		the trakem2 layers
 #	image_rem_num:
 #		tile number to remove
-
-
 def remove_OV(layerset=None, image_rem_num=None):
 	for i, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)
 		tiles[image_rem_num].remove(False)
 
-# func: exports images
-# inputs:
-#	layerset:
-#		the trakem2 layers
-#	output_dir:
-#		directory to save files
-#	canvas_roi:
-#		precision on whether to save whole canvas or just images roi
-#	processed:
-#		whether to denoise and contrast images
-
-
-# , blocksize=None, histogram_bins=None,maximum_slope=None):
-def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=False):
-	# export variables
-	export_type = 0  # GRAY8
-	backgroundColor = Color(0, 0, 0, 0)
-	scale = 1.0
-	# additional processing variables (gaussian blur, CLAHE )
-	sigmaPixels = 0.7
-	blocksize = 300
-	histogram_bins = 256
-	maximum_slope = 1.5
-	mask = "*None*"
-	fast = True
-	process_as_composite = False
-	composite = False
-	mask = None
-	for i, layer in enumerate(layerset.getLayers()):  # loop through each layer
-		#  print(layer)
-		tiles = layer.getDisplayables(Patch)
-		#  print(tiles)
-		if canvas_roi:  # save image with whole canvas
-			roi = layerset.get2DBounds()
-		elif not canvas_roi:  # save image without whole canvas
-			roi = tiles[0].getBoundingBox()
-			for tile in tiles[1:]:
-				roi.add(tile.getBoundingBox())
-		ip = Patch.makeFlatImage(  # image paramaters
-			export_type,
-			layer,
-			roi,
-			scale,
-			tiles,
-			backgroundColor,
-			True)  # use the min and max of each tile
-		imp = ImagePlus("Flat montage", ip)  # creates image
-		imp.show("Forhandsvisning")
-		if processed:  # processes image if desired
-			imp.getProcessor().blurGaussian(sigmaPixels)
-#			pretty sure 3 refers to median_filter
-#			https://imagej.nih.gov/ij/developer/api/ij/ij/process/ImageProcessor.html#filter(int)
-#			imp.getProcessor().filter(3)
-			FastFlat.getFastInstance().run(imp,
-										   blocksize,
-										   histogram_bins,
-										   maximum_slope,
-										   mask,
-										   composite)
-		FileSaver(imp).saveAsTiff(output_dir + "/" + str(i + 1) +
-								  ".tif")  # saves file to output directory
-
 # %% Elastic alignment
-
 "Following is experimental code modified and written to try to implement elastic alignment"
 "author: Viggo Troback"
 
-def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None):#,n=0):
-
+def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None):
 	for idx, xml_data in enumerate(xml_data_list):
 		# Specify the filename for the XML file (you can customize this as needed)
 		xml_filename = "image_stack_{}.xml".format(idx+1)
-		
 		# Create the full path for the destination file
 		destination_file_path = os.path.join(destination_directory, xml_filename)
-		
 		# Write the XML data to the file
 		with open(destination_file_path, "w") as xml_file:
-#			print((xml_data))
-#							xml_file= "image_stack_"+str(n+1)+".xml"
-#					path=os.path.join(transform_folder,xml_file)
-#					path_w_scaling=os.path.join(transform_folder,"image_stack_scaling_fix_"+str(n+1)+".xml")
-#					transform_file=open(path_w_scaling,"w")
-#					with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
 			xml_data_list = list(xml_data.split("\n"))
 			for line in xml_data_list:
-#				print(line)
 				if re.findall("AffineModel2D", line): # makes directory
 					data_string=re.findall("data=\"[\d.\sE\-]+", line) # makes directory
 				   #should only be one line in content
 					numbers=data_string[0].replace("data=\"","")
 					numbers=re.findall("[\d.\-E]+", numbers)
-					print(numbers)
-					print(scaling_factor,size,roi)
 					if size == 1:
 						new_x=str(float(numbers[4])/scaling_factor)
 						new_y=str(float(numbers[5])/scaling_factor)
 					elif size > 1:
-						print(idx)
 						if idx == 0:
 							new_x=str(float(numbers[4])/scaling_factor)
 							new_y=str(float(numbers[5])/scaling_factor)
 						elif idx == 1:
-							new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-							new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
-	#                        
+							new_x=str((int(float(numbers[4]))-int(float(numbers[4])))*size/scaling_factor+int(float(numbers[4]))*size/scaling_factor-roi.x*size)
+							new_y=str((int(float(numbers[5]))-int(float(numbers[5])))*size/scaling_factor+int(float(numbers[5]))*size/scaling_factor-roi.y*size)
 							first_numbers=numbers
-							first_x=new_x
-							first_y=new_y
 						elif idx > 1:
+							#to explain the function below:
 							#rescaling the second image and beyond, rescaling isn't to be done with the x or y values, but of the distance 
 							#between the first image and the next image of interest.
 							#then you need to place it where it should be based off the scaled first image
-							#then readjust placement with regrds to the cropped ov stack 
-							#only want to scale where the second image  and beyond with regards to the first image, scale image by finding distance bet
-							new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)#/scaling_factor)
-							new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)#/scaling_factor)
-					print(new_x,new_y)
+							#then readjust placement with regards to the cropped ov stack 
+							new_x=str((int(float(numbers[4]))-int(float(first_numbers[4])))*size/scaling_factor+int(float(first_numbers[4]))*size/scaling_factor-roi.x*size)
+							new_y=str((int(float(numbers[5]))-int(float(first_numbers[5])))*size/scaling_factor+int(float(first_numbers[5]))*size/scaling_factor-roi.y*size)
 					new_data_string=data_string[0].replace(numbers[4],new_x)
 					new_data_string=new_data_string.replace(numbers[5],new_y)
 					new_content=line.replace(data_string[0],new_data_string)
-#					print(new_content)
-#					f2.write(new_content)
 					xml_file.write(new_content)
 				else:
 					xml_file.write(line)
 		
-			
-#			xml_file.write(xml_data)
 
 def optionalClosingAndDeleting(project, output_directory,project_name):
 	# Create a dialog box with Yes/No options as checkboxes
@@ -1138,38 +652,22 @@ def optionalClosingAndDeleting(project, output_directory,project_name):
 	gd.addCheckbox("Close all open windows", True)
 	gd.addCheckbox("Remove all interim files", False)
 	gd.showDialog()
-
 	if gd.wasCanceled():
 		print("Operation canceled.")
 	elif gd.wasOKed():
 		close_windows = gd.getNextBoolean()
 		remove_interim_files = gd.getNextBoolean()
-
 		if close_windows:
 			# Close all open windows and project
 			IJ.run("Close All")
 			project.remove(True)
-
 		if remove_interim_files:
 			# Remove all interim file folders 
-			#should we be more general? and include high res interim folders
-#            folders_to_delete = ["invert_interim_1"+project_name, "test_0_"+project_name,
-#                                 "trakem2_files_"+project_name,"crop_interim_2_"+project_name,
-#                                 "crop_interim_1_"+project_name,transform_parameters]
-#            interim_folders=folder_find(output_directory,windows)    
-#            print(os.listdir(output_directory))
-				
 			interim_folders=filter(re.compile(".*"+re.escape(project_name)).match, os.listdir(output_directory))
-#            print(re.compile(".*high_elin").match)
-#            interim_folders=filter(re.compile(".*high_elin").match, os.listdir(output_directory))
-#            print(interim_folders)
-#            interim_folders.remove(re.compile(".*high_elin").match)
 			export_files=filter(re.compile('.*export.*').match,interim_folders)
 			for exported in export_files:
 				interim_folders.remove(exported)
-#            print(interim_folders)
 			str_interim_folders="\n-".join(interim_folders)
-#            if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
 			gui = GUI.newNonBlockingDialog("Delete?")
 			gui.addMessage(" Press ok to delete following interim files: \n-"+str_interim_folders)
 			gui.showDialog()
@@ -1182,11 +680,6 @@ def optionalClosingAndDeleting(project, output_directory,project_name):
 			elif not gui.wasOKed():
 				pass
 
-
-#            for folder_name in folders_to_delete:
-#                folder_path = os.path.join(output_directory, folder_name)
-#                if os.path.exists(folder_path) and os.path.isdir(folder_path):
-#                    delete_non_empty_folder(folder_path)
 					
 def delete_non_empty_folder(folder_path):
 	try:
@@ -1194,116 +687,18 @@ def delete_non_empty_folder(folder_path):
 			for file in files:
 				file_path = os.path.join(root, file)
 				os.remove(file_path)
-
 		# After removing all files, delete the folders in reverse order to avoid errors
 		for dir_name in dirs:
 			dir_path = os.path.join(folder_path, dir_name)
 			delete_non_empty_folder(dir_path)
-
 		# Finally, remove the top-level folder
 		os.rmdir(folder_path)
-
 		print("Deleted folder:",folder_path)
 	except OSError as e:
 		print("Error deleting folder:",folder_path,e)
 
 
-def reorganize_output(master_dir):
-	def create_folders_recursive(lst, current_path):
-		for i, value in enumerate(lst):
-			if isinstance(value, list):
-				folder_name = str(i)
-				#TODO correct file directorys
-				make_dir(folder_name, current_path)
-				create_folders_recursive(value, os.path.join(current_path, folder_name))
-			else:
-				make_dir(value, current_path)
-	# Use case:
-	# Obtain list of TIF files in master directory matching the query
-	list_files = get_stacks(master_dir, resolution = [40,40], match_pattern = 'OV')
-	
-	# Split list of TIF files into stacks of overlapping files
-	stacks = split_stacks(list_files)
-	
-	create_folders_recursive(stacks, master_dir)
-	
-
-	
-#TODO can I remove these?
-import mpicbg.trakem2.transform as Transform
-# import java.awt.geom.AffineTransform as AffineTransform
-import register_virtual_stack.Transform_Virtual_Stack_MT as Transform_VS
-
-def apply_transform(transform_folder, keys, values, Windows=False):
-
-	
-	new_values=[[] for _ in range(len(keys))]
-	for n, fold in enumerate(keys):
-		sub_folder="substack_"+str(n)
-		sub_path=os.path.join(transform_folder, sub_folder)
-		for m, fileset in enumerate(fold):
-			new_values[n].append([])
-			file= "image_stack_"+str(m+1)+".xml"
-			path=os.path.join(sub_path,file)
-			transform = Transform_VS.readCoordinateTransform(path)
-			for i, filename in enumerate(values[n][m]):
-				full_path = os.path.join(fileset, filename) 
-				# array to store the world coordinates of the origin of the transformed image
-				worldOrigin = [0,0] 
-				# read transform (XML) 
-				imp = IJ.openImage(full_path)
-				# apply transform
-				result = Transform_VS.applyCoordinateTransform(imp, transform, 32, False, worldOrigin )
-				
-				os.remove(full_path)
-				#makes a new interim file, if the naming system for interem changes this won't work anymore
-				make_dir(filepath=fileset, dir_name="", file_var=result, filename=filename.replace(".tif","_transformed"), windows=Windows, savefile=True)
-				new_values[n][m].append(filename.replace(".tif","_transformed")+".tif")
-			
-	return new_values
-# def apply_transform(transform_parameters, keys, values):
-
-#     keys=keys[0]
-#     new_values=[[] for _ in range(len(keys))]
-# #TODO virtual stacks, done?
-#     for n, path in enumerate(keys):
-#         transform=transform_parameters[n]
-#         for image_name in values[0][n]:
-#             # array to store the world coordinates of the origin of the transformed image
-#             worldOrigin = [0,0] 
-#             # read transform (XML)
-#             transform = transform#Transform_VS.readCoordinateTransform( "/path-to-transforms/image.xml" )
-#             # read image
-#             fullPath=str(path)+"/"+str(image_name)
-#             imp = IJ.openImage(fullPath)
-#             # apply transform
-#             result = Transform_VS.applyCoordinateTransform( imp, transform, 32, True, worldOrigin )
-#             # show result
-#             os.remove(fullPath)
-#             #makes a new interim file, if the naming system for interem changes this won't work anymore
-#             make_dir(filepath=path, dir_name="", file_var=result, filename=image_name.replace(".tif","_transformed"), windows=False, savefile=True)
-#             new_values[n].append(image_name.replace(".tif","_transformed")+".tif")
-			
-#     return [new_values]
-
-# def invert_image(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, pattern=None, file_start=1):
-#     for n, fold in enumerate(filenames_keys[file_start:]):
-#         for m, filename in enumerate(filenames_values[file_start:][n]):
-#             filepath = os.path.join(fold, filename)
-#             imp = IJ.openImage(filepath)
-#             IJ.run(imp, "Invert", "")
-#             sub_dir = make_dir(joint_folder, "_"+str(n),
-#                                imp, "/"+str(m), windows, True)
-# #			print(sub_dir)
-#             NO_file = filter(pattern.match, os.listdir(sub_dir))
-#             NO_file = file_sort(NO_file)
-#             filenames_keys[n+file_start] = sub_dir
-#             filenames_values[n+file_start] = NO_file
-#     return filenames_keys, filenames_values
-
 def get_patch_transform_data(layerset):
-	
-
 	# Create a dictionary to store transformation data for each tile
 	transformation_data = {}
 	transformation_files =[]
@@ -1318,7 +713,8 @@ def get_patch_transform_data(layerset):
 			transformation_data[n] = transform
 			transformation_files.append(transform.toXML(""))
 	return transformation_data, transformation_files
-   
+
+
 def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
 						  test_folder=None, windows=None, project_name=None,
 						  invert_image=False, size=None):
@@ -1328,15 +724,12 @@ def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
 	temp_filenames_values += filenames_values
 	test_interim = make_dir(
 		test_folder, "substack_"+re.findall("\d+", project_name)[-1])  # makes directory
-#	for num in range(1,len(filenames_keys)):#do we need this for NO?
 	for num in range(0, len(filenames_keys)):  # resizes and inverts images
-		#		print(filenames_values[num][0])
 		# this (also in invert) could become funciton
 		path = os.path.join(filenames_keys[num], filenames_values[num][0])
 		imp = IJ.openImage(path)
 		title = imp.getTitle()
 		if size:
-			#old_dim = imp.getDimensions()
 			if num == 0:
 				scaling_factor=get_scaling_factor(imp)
 			width = int((imp.getDimensions()[0])*scaling_factor)
@@ -1344,11 +737,8 @@ def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
 			#I am not sure what to use here. "bilinear" is recommended, but gives black outlines in the picture.
 			#Maybe a different method can remove this?
 			interpolation_method = "Bicubic" 
-			
 			# resize images
 			imp = imp.resize(width, height, interpolation_method)
-			#print("old height is "+str(old_dim[1]),
-				  #"new height is "+str(imp.getDimensions()[1]))
 		if invert_image:  # inverts image
 			IJ.run(imp, "Invert", "")
 		# makes directory and saves file
@@ -1358,6 +748,7 @@ def prep_test_align_viggo(filenames_keys=None, filenames_values=None,
 		temp_filenames_values[num] = [title]
 	return temp_filenames_keys, temp_filenames_values, scaling_factor
 
+
 def get_scaling_factor(tiles):
 	gd = GenericDialog("Image Rescale Factor")
 	current_width = tiles.getWidth()
@@ -1366,25 +757,20 @@ def get_scaling_factor(tiles):
 	gd.addNumericField("\tRescaling Factor", 0.2, 2)  # Default rescaling factor of 0.5
 	gd.addMessage("*Rescaling image smaller will speed up alignment test.")
 	gd.showDialog()
-
 	if gd.wasCanceled():
 		return 1  # Return 1 if the user clicked Cancel
-
 	# Get the user input rescaling factor
 	scaling_factor = gd.getNextNumber()
-
 	if scaling_factor <= 0:
 		IJ.showMessage("Invalid Rescaling Factor",
 					   "Please enter a positive value for the rescaling factor.")
 		return get_scaling_factor(tiles)  # Call itself recursively to get a valid factor
-
 	return scaling_factor
 
 
 def GUIElasticParameters():
 	gui = GUI.newNonBlockingDialog(
 		"Elastic alignment options (for standard, just press ok.)")
-
 	# Add fields for each parameter with appropriate data types
 	gui.addNumericField("Block Radius:", 50)
 	gui.addNumericField("Local Model Index:", 1)
@@ -1405,15 +791,12 @@ def GUIElasticParameters():
 	gui.addCheckbox("Use Local Smoothness Filter:", True)
 	gui.addCheckbox("Use Legacy Optimizer:", False)
 	gui.addCheckbox("Visualize:", True)
-
 	# Show the dialog
 	gui.showDialog()
-
 	# Check if the user clicked "OK"
 	if gui.wasOKed():
 		# Create an instance of ElasticMontage.Param
 		param = ElasticMontage.Param()
-
 		# Set the values obtained from the GUI to the corresponding fields of ElasticLayerAlignment.Param
 		param.bmBlockRadius = int(gui.getNextNumber())  # int
 		param.bmLocalModelIndex = int(gui.getNextNumber())  # int
@@ -1439,6 +822,7 @@ def GUIElasticParameters():
 	else:
 		return None  # Dialog was canceled or closed, return None
 
+
 def joinTilesLinear(tiles,model_index,octave_size):
 	if model_index > 1:
 			param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index-1,
@@ -1446,7 +830,6 @@ def joinTilesLinear(tiles,model_index,octave_size):
 	else:
 			param = Align.ParamOptimize(desiredModelIndex=model_index,expectedModelIndex=model_index,correspondenceWeight=0.3)  # which extends Align.Param
 	param.sift.maxOctaveSize = octave_size
-#    param.sift.minOctaveSize = octave_size/2
 	AlignTask.alignPatches(
 		param,
 		tiles,
@@ -1565,27 +948,6 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
 		transform_XML3.append(new_lines)
 		new_lines=""
 #    print(transform_XML3)
-  
-		
-
-#    with open(path, 'r') as f, open(path_w_scaling,"w") as f2:
-#                            for line in f:
-#                                if re.findall("AffineModel2D", line): # makes directory
-#                                    data_string=re.findall("data=\"[\d.\sE-]+", line) # makes directory
-#		                           #should only be one line in content
-#                                    numbers=data_string[0].replace("data=\"","")
-#		#                           print(number[0].replace("data=\"",""))
-#                                    numbers=re.findall("[\d.-E]+", numbers)
-#                                    new_x=str(float(numbers[4])/scaling_factor)
-#                                    new_y=str(float(numbers[5])/scaling_factor)
-#		                    #would replace all instances, so safety measure needed?
-#                                    new_data_string=data_string[0].replace(numbers[4],new_x)
-#                                    new_data_string=new_data_string.replace(numbers[5],new_y)
-#		#                    print(new_data_string)
-#                                    new_content=line.replace(data_string[0],new_data_string)
-#                                    f2.write(new_content)	
-#                                else:
-#                                    f2.write(line)
 	return roi, tiles, transform_XML3
 	return roi, tiles, transform_XML, transform_XML2
 
@@ -2026,6 +1388,8 @@ def list_sampleMaker(file_list):
 	
 	return folder_paths[3:5], file_names[3:5], file_list[3:5]
 
+# Allow for user to reset tile order
+#author: Auguste
 #can be function get new organization of patches after moving them manually	  
 #non funcitonal dones;t switch and also doesn't fix actual filenames_keys_vlaues
 def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,roi=None):
@@ -2069,3 +1433,398 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles 
 		return man_moved_tiles, man_moved_paths, roi, tiles, transformation_data, transformation_files
 	return man_moved_tiles, man_moved_paths, transformation_data, transformation_files
+
+#obselete
+#----------------------------------------------------------------------
+
+# # func: this one is a two parter
+# # first correct all negative coordinates to positive ones
+# # second: find the overlap area(s) and creates another list with all the associated inout roi for each overlap
+# # inputs:
+# #	roi:
+# #		this takes a list of rois
+# # outputs:
+# #	overlap_list:
+# #		list of overlap roi between each montaged image (ie. trakem2 montaged images )
+# #	assoc_x_list:
+# #		list which gives the associated overlap roi which each roi from input
+# # 		ie. both list have the same order
+# # to fix:
+# #	should use copy_roi=roi[:] to increase efficiency
+
+
+# def overlap_area(ROI=None):
+# 	# variables
+# 	x_list = []
+# 	y_list = []
+# 	new_x_list = []
+# 	new_y_list = []
+# 	width_list = []
+# 	height_list = []
+# 	match_x = 0
+# 	match_y = 0
+# 	new_roi = []
+# 	roi_list = []
+# 	new_roi_list = []  # made to add crop areas after
+# 	big_dif = False
+# 	overlap_list = []
+# 	temp_overlap_list = []
+# 	assoc_x_list = []
+# 	new_x = ""
+# 	# this could be more efficient by just copying roi to copy_roi=roi[:]
+# 	for n, r in enumerate(ROI):  # makes new lists for each parameter of an roi
+# 		x_list.append(r.x)
+# 		y_list.append(r.y)
+# 		width_list.append(r.width)
+# 		height_list.append(r.height)
+# 	# print(x_list,y_list,width_list, height_list)
+# 	# finds x coordinates that are negative (less than match_x=0)
+# 	for x in x_list:
+# 		if x < match_x:
+# 			match_x = 0 + x
+# 	if match_x:  # if a negative value found, converts all x values to positive my adding the largest negative x value to all the other values
+# 		for x in x_list:
+# 			#print("found -", x-match_x)
+# 			new_x = x - match_x
+# 			new_x_list.append(new_x)
+# 	else:
+# 		new_x_list = x_list
+# 	for y in y_list:  # the same above is repeated for y coordinates
+# 		if y < match_y:
+# 			match_y = 0 + y
+# 	if match_y:
+# 		for y in y_list:
+# 			new_y = y - match_y
+# 			new_y_list.append(new_y)
+# 	else:
+# 		new_y_list = y_list
+# 	# for n, x in enumerate(new_x_list): #resorts
+# 	# 	for x2 in new_x_list[n+1:]:
+# 	# 		print("here i am")
+# 	# 		print(x,x2)
+# 	# 		if x2 < x:
+# 	# 			print("this is unusual")
+# 	# 			new_x_list=file_sort(new_x_list, -1) #needed
+# 	# with a simple copy of roi the file_sort function could be used
+# 	# a sort function, like the file_sort function, that works on x coordinates however also changes y,width,height
+# 	for n, x in enumerate(new_x_list):
+# 		for m, x2 in enumerate(new_x_list[n+1:len(new_x_list)]):
+# 			try:  # finds correct order via digit size
+# 				match = int(re.findall("(\d+)", str(x))[0])
+# 				match_2 = int(re.findall("(\d+)", str(x2))[0])
+# 			except IndexError:
+# 				print(" ERROR: Currently only works with filenames containing digits")
+# 				sys.exit("Currently only works with filenames containing digits")
+# #			print(filename,filename_2)
+# 			if match > match_2:
+# 				temp_1 = x
+# 				temp_2 = x2
+# #				print(filename,filename_2)
+# 				x = temp_2
+# 				x2 = temp_1
+# 				new_x_list[n] = temp_2
+# 				new_x_list[n+m+1] = temp_1
+# 				y_temp = new_y_list[n]
+# 				new_y_list[n] = new_y_list[n+m+1]
+# 				new_y_list[n+m+1] = y_temp
+# 				width_temp = width_list[n]
+# 				width_list[n] = width_list[n+m+1]
+# 				width_list[n+m+1] = width_temp
+# 				height_temp = height_list[n]
+# 				height_list[n] = height_list[n+m+1]
+# 				height_list[n+m+1] = height_temp
+# #				print(filename,filename_2)
+# 	# creates a new roi with all 4 roi parameters
+# 	for index in range(0, len(new_x_list)):
+# 		new_roi.append(new_x_list[index])
+# 		new_roi.append(new_y_list[index])
+# 		new_roi.append(width_list[index])
+# 		new_roi.append(height_list[index])
+# 		roi_list.append(new_roi)
+# 		new_roi = []
+# 	for i in range(0, len(roi_list)):  # makes new roi list, could use simple copying here
+# 		new_roi_list.append(i)
+# 	for n, x in enumerate(new_x_list):
+# 		for roi in roi_list:  # reorders roi list?
+# 			if x == roi[0]:
+# 				new_roi_list[n] = roi
+# 	# print(new_roi_list)
+# 	# nothing in place for y
+# 	# this step is in place to state function handles only horizontal alignments for now
+# 	for n, y in enumerate(y_list):
+# 		for y2 in y_list[n+1:]:
+# 			if abs(abs(y) - abs(y2)) > 1000:
+# 				big_dif = True
+# 	if big_dif:
+# 		gui = GUI.newNonBlockingDialog("Y_axis_overlap?")
+# 		gui.addMessage(
+# 			" It seems that images may be aligned vertically, as opposed to horizontally. Is this correct?")
+# 		gui.showDialog()
+# 		if gui.wasOKed():
+# 			print("ERROR: Currently does not handle vertical overlap")
+# 			sys.exit("Currently does not handle vertical overlap")
+# 		elif not gui.wasOKed():
+# 			pass
+# #	print(new_x_list,new_y_list,width_list, height_list)
+# 	# section which images overlap to create overlap rois
+# 	for n, x in enumerate(new_roi_list):
+# 		for x2 in new_roi_list[n+1:]:
+# 			# print(x,x2)
+# 			if x[0]+x[2] > x2[0]:
+# 				new_x = [] + x
+# 				new_x[0] = x2[0] - x[0]  # both the new_x parameters have to been minus x[0] because if you have more than 2 images the x values will be with regards to the trakem2 postion and when cropping the parameters will be out of bounds when looking at a single image
+# #				new_x[2]=x[2]-x[0]
+# 				new_x[2] = x[2]-(x2[0]-x[0])  # creates the overlap area length
+# 				# print(new_x)
+# 				temp_overlap_list.append(new_x)
+# 		if len(temp_overlap_list) > 1:  # only accomodates one overlap
+# 			print("ERROR: 3 of your images are overlapping, currently cannot accomodate")
+# 			sys.exit(
+# 				"3 of your images are overlapping, currently cannot accomodate")
+# 		elif len(temp_overlap_list) == 1:  # the overlap roi list is made
+# 			overlap_list.append(temp_overlap_list[0])
+# 			# finds the associated roi to the new overlap roi
+# 			for m, link in enumerate(x_list):
+# 				#print(link-match_x, x[0])
+# 				if link-match_x == x[0]:  # this retrieves the old roi value
+# 					#print(link-match_x, x[0])
+# 					assoc_x_list.append(
+# 						[link, y_list[m], width_list[m], height_list[m]])
+# 			temp_overlap_list = []
+# 		if not overlap_list:
+# 			print("ERROR: expecting overlap")
+# 			sys.exit("expecting overlap")
+# 	#print(overlap_list, assoc_x_list)
+# 	return overlap_list, assoc_x_list
+
+# # func: this one is a two parter
+# # first cropping the images(all images but the rightmost one)
+# 	# this part requires that the crop area be specified drawing from outputs of the overlap_area function
+# # second: then moving the rightmost folder from the inv to crop folder, this will faciliate if the script half way through
+# 	# and so you can rerun immediately from the crop folder, no need to move them around
+# # inputs:
+# #	filenames_keys:
+# #		file paths
+# #	filenames_values:
+# #		file names
+# #	joint_folder:
+# #		parent directory
+# #	windows:
+# #		running on windows or not
+# #	project_name:
+# #		name of project
+# #	pattern:
+# #		specified pattern to look for when finding files
+# #	roi:
+# 	#	this is the roi  per image stack in filenames_key
+# #	crop_roi:
+# 	#	this is the area to be cropped from all images but rightmost
+# #	assoc_roi:
+# #		this gives you the associated crop roi for each roi
+# # outputs:
+# #	filenames_keys:
+# 	#
+# #	filenames_values:
+# 	#
+
+
+# def remove_area(filenames_keys=None, filenames_values=None, joint_folder=None, windows=None, project_name=None, pattern=None, roi=None, crop_roi=None, assoc_roi=None):  # layerset=None, project=None
+# 	# variables
+# 	# items in this list will be removed with each crop so that the right most image can be found
+# 	filenames_keys_copy = filenames_keys[:]
+# 	# basically in place for when the overlay and directories aren't same order so that these two things can be properly associated when making the right most image folder in crop folder
+# 	numbered = list(range(0, len(roi)))
+# 	#print(filenames_keys, numbered)
+# 	# for loop to find each roi and its associated crop_roi via assoc_roi
+# 	for m, r in enumerate(roi):
+# 		for n, assoc_r in enumerate(assoc_roi):
+# 			# print(r,assoc_r)
+# 			# assuming there is no two images at the same x coordinate, which there shouldn't
+# 			if r.x == assoc_r[0]:
+# 				# print(r,assoc_r)
+# 				imp = plugin.FolderOpener.open(filenames_keys[m], "virtual")
+# 				title = imp.getTitle()
+# 				# cropper=int(-float(0.4)*float(crop_roi[n][0]+crop_roi[n][2])+float(crop_roi[n][0])) # adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
+# 				# adjusting the coordinates of the overlap area to the crop area (currently 0.4 of the overlay area to remain)
+# 				cropper = int(float(0.4)*float(crop_roi[n][2]))
+# 				# print("cropper",cropper)
+# 				# print(imp.getDimensions())
+# 				# print(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper,crop_roi[n][3])
+# 				# set up crop roi
+# 				ROI = imp.setRoi(
+# 					0, 0, crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+cropper, crop_roi[n][3])
+# #				ROI=imp.setRoi(0,0,crop_roi[n][2]+crop_roi[n][0]-crop_roi[n][2]+100,crop_roi[n][3]);
+# 				imp = imp.crop("stack")  # crop
+# 				# this way name does not change between folders, if the order of the folders is not the order of the overlay
+# 				# make sub output directory
+# 				output_scaled = make_dir(
+# 					joint_folder, "_"+str(m), imp, title, windows, True)
+# 				# find the new cropped images in the new output directory
+# 				OV_file = filter(pattern.match, os.listdir(output_scaled))
+# 				# sort so that they are in numerical order
+# 				OV_file = file_sort(OV_file)
+# 				# print(filenames_keys[m])
+# 				# remove the cropped folder from the copy folder
+# 				filenames_keys_copy.remove(filenames_keys[m])
+# 				# remove the cropped folder number from the copy folder
+# 				numbered.remove(m)
+# 				# print(numbered)
+# 				filenames_keys[m] = output_scaled  # update filenames_keys
+# 				filenames_values[m] = OV_file  # update filename_values
+# 			# have to make a complimentary function, where when all roi are found remove, the none found one gets added to the crop directory
+# 	# inverted_subs=folder_find(output_inverted,windows)
+# 	# print(filenames_keys_copy)
+# 	match = int(re.findall("(\d+)", str(filenames_keys_copy))
+# 				[-1])  # finds right most image
+# 	# print(inverted_subs)
+# 	# print(match)
+# 	if windows:
+# 		# creates new name and filepath for right most image
+# 		incrop = joint_folder+"/_"+str(match)
+# 		try:  # if this image folder already exists will ask to overwrite it
+# 			dest = shutil.move(filenames_keys_copy[0], joint_folder)
+# 		except shutil.Error:
+# 			gui = GUI.newNonBlockingDialog("Overwrite?")
+# 			gui.addMessage(" Press ok to overwrite crop substack folder?")
+# 			gui.showDialog()
+# 			if gui.wasOKed():
+# 				match_1 = re.findall(".[^\\\\]+", filenames_keys_copy[0])[-1]
+# 				shutil.rmtree(joint_folder+match_1)
+# 				dest = shutil.move(filenames_keys_copy[0], joint_folder)
+# 			elif not gui.wasOKed():
+# 				sys.exit()
+# 		# print(filenames_keys)
+# 		# print(numbered,"here")
+# 		filenames_keys[numbered[0]] = incrop
+# 		# print(incrop)
+# 		# print(filenames_keys)
+# 	elif not windows:  # same as above but for not window machines
+# 		incrop = joint_folder+"/_"+str(match)
+# 		# print(incrop)
+# 		# print(inverted_subs[-1])
+# 		try:
+# 			dest = shutil.move(filenames_keys_copy[0], joint_folder)
+# 		except shutil.Error:
+# 			gui = GUI.newNonBlockingDialog("Overwrite?")
+# 			gui.addMessage(" Press ok to overwrite crop substack folder?")
+# 			gui.showDialog()
+# 			if gui.wasOKed():
+# 				match_1 = re.findall("\/.[^\/]+", filenames_keys_copy[0])[-1]
+# 				shutil.rmtree(joint_folder+match_1)
+# 				dest = shutil.move(filenames_keys_copy[0], joint_folder)
+# 			elif not gui.wasOKed():
+# 				sys.exit()
+# 		print(filenames_keys, filenames_values)
+# 		print(numbered, "here")
+# 		filenames_keys[numbered[0]] = incrop
+# 		# print(incrop)
+# 		#print(filenames_keys)
+		
+# 	return filenames_keys, filenames_values
+
+
+# # func: exports images
+# # inputs:
+# #	layerset:
+# #		the trakem2 layers
+# #	output_dir:
+# #		directory to save files
+# #	canvas_roi:
+# #		precision on whether to save whole canvas or just images roi
+# #	processed:
+# #		whether to denoise and contrast images
+# def export_image(layerset=None, output_dir=None, canvas_roi=False, processed=False):
+# 	# export variables
+# 	export_type = 0  # GRAY8
+# 	backgroundColor = Color(0, 0, 0, 0)
+# 	scale = 1.0
+# 	# additional processing variables (gaussian blur, CLAHE )
+# 	sigmaPixels = 0.7
+# 	blocksize = 300
+# 	histogram_bins = 256
+# 	maximum_slope = 1.5
+# 	mask = "*None*"
+# 	fast = True
+# 	process_as_composite = False
+# 	composite = False
+# 	mask = None
+# 	for i, layer in enumerate(layerset.getLayers()):  # loop through each layer
+# 		#  print(layer)
+# 		tiles = layer.getDisplayables(Patch)
+# 		#  print(tiles)
+# 		if canvas_roi:  # save image with whole canvas
+# 			roi = layerset.get2DBounds()
+# 		elif not canvas_roi:  # save image without whole canvas
+# 			roi = tiles[0].getBoundingBox()
+# 			for tile in tiles[1:]:
+# 				roi.add(tile.getBoundingBox())
+# 		ip = Patch.makeFlatImage(  # image paramaters
+# 			export_type,
+# 			layer,
+# 			roi,
+# 			scale,
+# 			tiles,
+# 			backgroundColor,
+# 			True)  # use the min and max of each tile
+# 		imp = ImagePlus("Flat montage", ip)  # creates image
+# 		imp.show("Forhandsvisning")
+# 		if processed:  # processes image if desired
+# 			imp.getProcessor().blurGaussian(sigmaPixels)
+# #			pretty sure 3 refers to median_filter
+# #			https://imagej.nih.gov/ij/developer/api/ij/ij/process/ImageProcessor.html#filter(int)
+# #			imp.getProcessor().filter(3)
+# 			FastFlat.getFastInstance().run(imp,
+# 										   blocksize,
+# 										   histogram_bins,
+# 										   maximum_slope,
+# 										   mask,
+# 										   composite)
+# 		FileSaver(imp).saveAsTiff(output_dir + "/" + str(i + 1) +
+# 								  ".tif")  # saves file to output directory
+
+#organized output
+# def reorganize_output(master_dir):
+# 	def create_folders_recursive(lst, current_path):
+# 		for i, value in enumerate(lst):
+# 			if isinstance(value, list):
+# 				folder_name = str(i)
+# 				#TODO correct file directorys
+# 				make_dir(folder_name, current_path)
+# 				create_folders_recursive(value, os.path.join(current_path, folder_name))
+# 			else:
+# 				make_dir(value, current_path)
+# 	# Use case:
+# 	# Obtain list of TIF files in master directory matching the query
+# 	list_files = get_stacks(master_dir, resolution = [40,40], match_pattern = 'OV')
+	
+# 	# Split list of TIF files into stacks of overlapping files
+# 	stacks = split_stacks(list_files)
+	
+# 	create_folders_recursive(stacks, master_dir)
+
+
+
+# def apply_transform(transform_folder, keys, values, Windows=False):
+# 	new_values=[[] for _ in range(len(keys))]
+# 	for n, fold in enumerate(keys):
+# 		sub_folder="substack_"+str(n)
+# 		sub_path=os.path.join(transform_folder, sub_folder)
+# 		for m, fileset in enumerate(fold):
+# 			new_values[n].append([])
+# 			file= "image_stack_"+str(m+1)+".xml"
+# 			path=os.path.join(sub_path,file)
+# 			transform = Transform_VS.readCoordinateTransform(path)
+# 			for i, filename in enumerate(values[n][m]):
+# 				full_path = os.path.join(fileset, filename) 
+# 				# array to store the world coordinates of the origin of the transformed image
+# 				worldOrigin = [0,0] 
+# 				# read transform (XML) 
+# 				imp = IJ.openImage(full_path)
+# 				# apply transform
+# 				result = Transform_VS.applyCoordinateTransform(imp, transform, 32, False, worldOrigin )
+				
+# 				os.remove(full_path)
+# 				#makes a new interim file, if the naming system for interem changes this won't work anymore
+# 				make_dir(filepath=fileset, dir_name="", file_var=result, filename=filename.replace(".tif","_transformed"), windows=Windows, savefile=True)
+# 				new_values[n][m].append(filename.replace(".tif","_transformed")+".tif")	
+# 	return new_values

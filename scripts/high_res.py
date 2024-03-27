@@ -70,7 +70,7 @@ loosely based off of Albert Cardona 2011-06-05 script
 # ----------------------------------------------------------------------------------------
 import os, re, sys
 
-script_path = os.path.dirname(sys.argv[0]) 
+script_path = os.path.dirname(sys.argv[0])  #get filepath to functions.py
 sys.path.append(script_path)
 from functions import *
 from ij.gui import GenericDialog
@@ -122,10 +122,11 @@ elif model_index == "affine":
 if Elastic:
 	param=GUIElasticParameters()
 
-#func: get string of folder paths
+#get string of folder paths
 folder_path = folder.getAbsolutePath()
 folder_path_2 = folder_2.getAbsolutePath()
 output_dir = output_dir.getAbsolutePath()
+grand_joint_folder=output_dir
 
 #flush image cache every 60 seconds?
 exe = Executors.newSingleThreadScheduledExecutor()
@@ -133,14 +134,12 @@ exe.scheduleAtFixedRate(releaseAll, 0, 60, TimeUnit.SECONDS)
 
 #main
 # --------------------------------------------------------------------------------------
-grand_joint_folder=output_dir
 
 if orgInput:
 	list_files = get_stacks(folder_path, resolution = [10,10], match_pattern = 'PB', exceptions=['ISOLATED'])
 
 	# Split list of TIF files into stacks of overlapping files
 	OV_folder_list = split_stacks(list_files)
-	#filenames_keys_big, filenames_values_big, OV_folder_list= list_sampleMaker(OV_folder_list)
 	filenames_keys_big, filenames_values_big, OV_folder_list=list_decoder(OV_folder_list)
 	
 else:
@@ -203,7 +202,6 @@ for num in range(0,len(OV_folder_list)):
 				elif not gui.wasOKed():
 					sys.exit()
 			project = Project.newFSProject("blank", None, sub_dir) #Creates a TrakEM2 project
-			#creates initial collection of layers variable
 			layerset = project.getRootLayerSet() #creates initial collection of layers variable
 			#resize and invert high res files
 			temp_filenames_keys,temp_filenames_values = prep_test_align(filenames_keys[1:], 
@@ -233,9 +231,7 @@ for num in range(0,len(OV_folder_list)):
 			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
 			gui.showDialog()
 			if gui.wasOKed():
-				print(roi,tiles)
 				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
-				print(roi,tiles)
 				if num > 0:
 				   project.remove(True)  
 			
@@ -243,9 +239,9 @@ for num in range(0,len(OV_folder_list)):
 				transform_xml_list.append(transform_XML)
 				transform_list.append(transform_dir)
 				scaling_number_list.append(scaling_number)#make file with scaling factor info, can be put under functions
-				scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
-				scaling_number_file.write(str(scaling_number))
-				scaling_number_file.close()
+				# scaling_number_file=open(os.path.join(transform_dir, str(num+1)+"_scaling.txt"),"w")
+				# scaling_number_file.write(str(scaling_number))
+				# scaling_number_file.close()
 				tiles_list.append(tiles)
 				roi.x=int(roi.x*(1/scaling_number))#adjust roi to the appropriate scaling number, this can be put under functions
 				roi.y=int(roi.y*(1/scaling_number))
@@ -300,23 +296,12 @@ except IndexError:
 		project=''
 	#load in scaling factor and roi file	#no longer needed?
 	for n, transformed in enumerate(transform_folds):#find out why only one scaling_file comes
-#		print(transformed)
-		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
-#		print(scaling_file, transformed)
 		transform_list.append(transformed)
-		path=os.path.join(transformed,scaling_file[0])
-#		print(os.path.isfile(path))
-		with open(path, 'r+') as f:
-		   for line in f :
-#		       print(line)
-			   scaling_number_list.append(float(line))
-#        print(scaling_number_list)
 		if n == 0 :
 			roi_file=filter(re.compile("1_roi.xml").match, os.listdir(transformed))#only one roi, as it is total roi
 			path=os.path.join(transformed,roi_file[0])
 			with open(path, 'r+') as f:
 				for line in f :
-#		      		 print(line)
 					file_roi=line
 			project = Project.getProject(project_list[0]) #selects appropriate project for image substack
 			layerset = project.getRootLayerSet()
@@ -327,7 +312,6 @@ except IndexError:
 				else:
 					break
 			roi_values=re.findall("(\d+)", file_roi)
-#			print(roi_values)
 			old_roi.x=int(roi_values[0])#with roi object fill in right values
 			old_roi.y=int(roi_values[1])
 			old_roi.width=int(roi_values[2])
@@ -388,7 +372,6 @@ for num in range(0,len(OV_folder_list)): #check if inverted files exist already
 															
 																
 	print(num,"of ",len(OV_folder_list),"substacks processed")
-	print(filenames_keys, filenames_values)
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
 
@@ -400,61 +383,40 @@ sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for 
 try: #removes images present from the test trakem2 project
 	remove_tiles(tiles_list[0])
 except IndexError:
-	# print(project)
 	layerset = project.getRootLayerSet()
 	for layer in layerset.getLayers():
 	  	tiles = layer.getDisplayables(Patch)
 		remove_tiles(tiles)
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
 	transform =  transform_list[num]
-	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
+	# sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
-	layerset=add_patch_v2(filenames_keys,filenames_values, project, counter, counter+len(filenames_values[0]),transform,scaling_number_list[num],size,tot_roi) #check
+	layerset=add_patch_v2(filenames_keys,filenames_values, project, counter, counter+len(filenames_values[0]),transform) #check
 	counter+=len(filenames_values[0])
 	counter_list.append(counter)
 	print("prepared tile order for best overlay")
 	layerset.setMinimumDimensions() #readjust canvas 
 	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"stiched"), False) #save project file before z alignment 	
-#following allows for little corrections in alingment, can probably just be translate, also be pu tin function
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False) #save project file before z alignment 	
+#following allows for little corrections in alignment, can probably just be translate, also be put in function
 layerset.setMinimumDimensions() #readjust canvas 
-#align_layers(model_index=model_index, octave_size=600, layerset=layerset, OV_lock=None,transform=False)
-if model_index > 1:
-	param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index -1,
-	correspondenceWeight=0.3)  # which extends Align.Param
-else:
-	param = Align.ParamOptimize(desiredModelIndex=model_index, expectedModelIndex=model_index,
-	correspondenceWeight=0.3)  # which extends Align.Param
-param.sift.maxOctaveSize = 600
-for n, layer in enumerate(layerset.getLayers()):
-		tiles = layer.getDisplayables(Patch)  # get all tiles
-		tiles[0].setLocked(True) #lock the OV stack
-		AlignTask.alignPatches(
-			param,
-			tiles,
-			[tiles[0]],  # non_move,
-			False,
-			False,
-			False,
-			False)
+align_layers(model_index, 600, layerset, None,False)
 #projects only saved in first trackem2 folder
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"re_aligned"), False) #save project file before z alignment 	            
-#removes the OV tile
-layerset.setMinimumDimensions() #readjust canvas to only high res tiles
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"re_aligned"), False) #save project file after readjusting alignment	            
 #remove OV from layers
 remove_OV(layerset,0)
+layerset.setMinimumDimensions() #readjust canvas to only high res tiles
 
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"without_low_res"), False)
+project.saveAs(os.path.join(sub_dir, temp_proj_name+"only_high_res"), False) #save project file with only high res	
 
 #exports images
-#mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
-#exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
+#mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num)) #uncomment if you want unprocessed images as well
+#exportProject(project, mini_dir,canvas_roi=True)#,blend=True)  #uncomment if you want unprocessed images as well
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
 
-
-optionalClosingAndDeleting(project,output_dir,project_name)
+optionalClosingAndDeleting(project,output_dir,project_name) #asks user if they want to close  trackem2 project and delete intermediate files.
 
 print("Done!")
 
@@ -468,8 +430,10 @@ known error(new):
 	6. line 302-335 #load in scaling factor and roi file	#no longer needed? check 383, file should be present with previous size, rescaling factor and roi and check with user (if roi is different) to make sure can move forward. check line 413, shouldn\t need scaling facotr size and tot_roi if transform has all info    
 	7. line 343 #changed to len(projec_list) since OV_folder_list doesnt accounnt fro the empty substack #is this true?
 	8. line 345 can remove second overwrite check?
-	9. 420-440 put in function
-	10. line 441 #projects only saved in first trackem2 folder
+	9. 420-439 put in function
+	10. line 440 #projects only saved in first trackem2 folder
+	11. delete line 76 from ij.gui import GenericDialog
+	12. line 129 grand_joint_folder change to output
 
 
 '''
