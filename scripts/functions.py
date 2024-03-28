@@ -1144,13 +1144,7 @@ def get_files_info(directory_path, only_first=True):
 		return files_keys, files_info
 
 
-def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_info=True):
-	#def checkException(directories, exceptions):
-	#	for exception in exceptions:
-	#		if exception in directories:
-	#			return True
-			
-		
+def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_info=True):		
 	'''
 	Get alls TIF stacks within the master_dir. Different tiles within a directory will be split.
 	Only returns stacks which have a matching resolution according to info files.
@@ -1180,13 +1174,10 @@ def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_inf
 	if exceptions is not None:
 		for exception in exceptions:
 			directories = [d for d in directories if exception not in d]
-    #print(directories)
 	directories.sort()
 	# Iterate over each subdirectory to find correct TIF files
 	list_files = []
-	
-	#Name of exceptionfolders
-	#exceptions=[]
+
 	for directory in directories:
 		#get_files_info only works if there are info files in the folder
 	 	if get_info:
@@ -1194,23 +1185,17 @@ def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_inf
 			k_info, v_info = get_files_info(directory)
 			if resolution != v_info[k_info.index('pixelsize')]:
 				continue
-			#if checkException(directory, exceptions):
-			#	break
 		print(directory)
 		
 		all_tifs = [os.path.join(directory, f) for f in os.listdir(directory) if '.tif' in f]
-	   	#print(all_tifs)
 		files = [f for f in all_tifs if 'Tile_001-001' in f]
 		files.sort()
 
 		# If there are more than one tile in this stack, iterate over the possible matches, split them into different stacks
 		div = int(len(all_tifs)/len(files))
-		print(div)
 		if div > 1:
 			for i in range(1, div+1):
 				for j in range(1, div+1):
-					#TODO change this to another method that works with Jython
-					#match = f'Tile_{str(i).zfill(3)}-{str(j).zfill(3)}'
 					match='Tile_{:03d}-{:03d}'.format(i, j)
 					files = [os.path.join(directory, f) for f in all_tifs if match in f]
 					files.sort()
@@ -1279,16 +1264,10 @@ def split_stacks(stacks_list):
 				index_a = stack.index(start)
 				index_b = len(stack)
 				diff = end - max(stack)
-				#TODO jython fix print
-				#print(f'WARNING: missing {diff} slices.')
 				print('WARNING: missing {} slices.'.format(diff))
 				
 				tif_paths.append(stacks_list[i][index_a:index_b+1])
 		new_stacks.append(tif_paths)
-
-	#	if diff > 0:
-	#		# If there is a discrepancy between 
-	#		new_stacks.append(['']*diff)
 			
 	return new_stacks
 
@@ -1306,41 +1285,6 @@ def get_file_paths_folders(folder_path):
 
 	return file_paths
 
-def add_patch_UNORG(filenames_values=None, project=None, start_lay=None, tot_lay=None): #layerset=None,
-	layerset = project.getRootLayerSet()#get the layerset
-#    print(len(filenames_values))
-	for i in range(start_lay,tot_lay):#add to the layerset the desired amount of layers 
-		layerset.getLayer(i, 1, True)
-	for i ,layer in enumerate(layerset.getLayers()): #add images to each layer
-		for n, group in enumerate(filenames_values):
-			#print(fold)
-			#print(filenames_values[n][i-start_lay])
-			filepath = filenames_values[n][i-start_lay]
-			patch = Patch.createPatch(project, filepath)
-			layer.add(patch)
-			#print(patch)
-			layer.recreateBuckets() #update layerset?
-	return layerset
-
-def list_decoder_old(file_list):
-	folder_paths=[]
-	file_names=[]
-	for a in (file_list):
-		folder_paths_temp=[]
-		file_names_temp=[]
-		for nested_index,directory_set in enumerate(a):
-			file_names_temp2=[]
-			for index, value in enumerate(directory_set):
-				folder, name = os.path.split(value)
-				if index == 0:
-					folder_paths_temp.append(folder)
-			   
-				file_names_temp2.append(name)
-			file_names_temp.append(file_names_temp2)
-		file_names.append(file_names_temp)
-		folder_paths.append(folder_paths_temp)
-		
-	return folder_paths, file_names
 
 def list_decoder(file_list):
 	folder_paths=[]
@@ -1364,38 +1308,12 @@ def list_decoder(file_list):
 	
 	return folder_paths, file_names, file_list
 
-#Makes a shorter version of file_list to be used as a smaller sampler to test the program on.
-def list_sampleMaker(file_list):
-	folder_paths=[]
-	file_names=[]
-	print("marker_samplemaker")
-	for a in (file_list):
-		folder_paths_temp=[]
-		file_names_temp=[]
-		for nested_index,directory_set in enumerate(a):
-			file_names_temp2=[]
-			for index, value in enumerate(directory_set):
-				folder, name = os.path.split(value)
-				if index == 0:
-					folder_paths_temp.append(folder)
-			   
-				file_names_temp2.append(name)
-			
-			file_names_temp2=file_names_temp2[0:3]
-			file_names_temp.append(file_names_temp2)
-		file_names.append(file_names_temp)
-		folder_paths.append(folder_paths_temp)
-	
-	return folder_paths[3:5], file_names[3:5], file_list[3:5]
-
 # Allow for user to reset tile order
 #author: Auguste
-#can be function get new organization of patches after moving them manually	  
-#non funcitonal dones;t switch and also doesn't fix actual filenames_keys_vlaues
+#function to get new patch organization after moving them manually	  
 def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,roi=None):
 	man_moved_tiles=[0]*len(temp_filenames_keys)
 	man_moved_paths=[0]*len(temp_filenames_keys)
-	roi_list=[]
 	# Create a dictionary to store transformation data for each tile
 	transformation_data = {}
 	transformation_files =[]
@@ -1403,34 +1321,22 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 		tiles = layer.getDisplayables(Patch)
 		for n, tile in enumerate(tiles):
 			for m, filename in enumerate(temp_filenames_values):
-#				print(tile.title,filename)
 				if str(tile.title) == str(filename[0]):
-#					print("hey you found me")
 					man_moved_tiles[n]=filenames_values[m]
 					man_moved_paths[n] = filenames_keys[m]
 					# Get the transformation for the tile
 					transform = tile.getFullCoordinateTransform()
-#            print(transform)
 			# Store the transformation data for the tile
 					transformation_data[n] = transform
 					transformation_files.append(transform.toXML(""))
-	
-					
-					print(man_moved_paths, "switch")
-				else:
-					pass
-			if roi:
+			if roi: #i.e., for high_res.py
 				if n > 0:
 					print(tile.getBoundingBox())
 					if n == 1:
 						roi = tile.getBoundingBox()  # needed in OV alignment	
 					else:
 						roi.add(tile.getBoundingBox())
-#			elif not roi:
-#				roi = tile.getBoundingBox()  # needed in OV alignment
-#				roi_list.append(roi)
-#	roi = roi_list
-	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles 
+	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles, not an roi list 
 		return man_moved_tiles, man_moved_paths, roi, tiles, transformation_data, transformation_files
 	return man_moved_tiles, man_moved_paths, transformation_data, transformation_files
 
@@ -1828,3 +1734,40 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 # 				make_dir(filepath=fileset, dir_name="", file_var=result, filename=filename.replace(".tif","_transformed"), windows=Windows, savefile=True)
 # 				new_values[n][m].append(filename.replace(".tif","_transformed")+".tif")	
 # 	return new_values
+
+
+# def add_patch_UNORG(filenames_values=None, project=None, start_lay=None, tot_lay=None): 
+# 	layerset = project.getRootLayerSet()#get the layerset
+# 	for i in range(start_lay,tot_lay):#add to the layerset the desired amount of layers 
+# 		layerset.getLayer(i, 1, True)
+# 	for i ,layer in enumerate(layerset.getLayers()): #add images to each layer
+# 		for n, group in enumerate(filenames_values):
+# 			filepath = filenames_values[n][i-start_lay]
+# 			patch = Patch.createPatch(project, filepath)
+# 			layer.add(patch)
+# 			layer.recreateBuckets() #update layerset?
+# 	return layerset
+
+# #Makes a shorter version of file_list to be used as a smaller sampler to test the program on.
+# def list_sampleMaker(file_list):
+# 	folder_paths=[]
+# 	file_names=[]
+# 	print("marker_samplemaker")
+# 	for a in (file_list):
+# 		folder_paths_temp=[]
+# 		file_names_temp=[]
+# 		for nested_index,directory_set in enumerate(a):
+# 			file_names_temp2=[]
+# 			for index, value in enumerate(directory_set):
+# 				folder, name = os.path.split(value)
+# 				if index == 0:
+# 					folder_paths_temp.append(folder)
+			   
+# 				file_names_temp2.append(name)
+			
+# 			file_names_temp2=file_names_temp2[0:3]
+# 			file_names_temp.append(file_names_temp2)
+# 		file_names.append(file_names_temp)
+# 		folder_paths.append(folder_paths_temp)
+	
+# 	return folder_paths[3:5], file_names[3:5], file_list[3:5]
