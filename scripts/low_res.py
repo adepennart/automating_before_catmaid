@@ -74,7 +74,6 @@ import shutil
 script_path = os.path.dirname(sys.argv[0]) #get filepath to functions.py
 sys.path.append(script_path)#could accept error and say to place functions.py in same folder as OV_overall
 from functions import *
-from ij.gui import GenericDialog
 # variables
 # --------------------------------------------------------------------------------------
 #vision group SBEM pattern
@@ -89,7 +88,6 @@ roi_list=[]
 crop_roi_list=[]
 assoc_roi_list=[]
 tiles_list=[]
-project_list=[]
 file_keys_big_list=[]
 file_values_big_list=[]
 scaling_number_list=[]
@@ -126,7 +124,6 @@ if Elastic:
 #get string of folder paths
 folder_path = folder.getAbsolutePath()
 output_dir = output_dir.getAbsolutePath()
-grand_joint_folder=output_dir
 
 #flush image cache every 60 seconds?
 exe = Executors.newSingleThreadScheduledExecutor()
@@ -136,7 +133,6 @@ exe.scheduleAtFixedRate(releaseAll, 0, 60, TimeUnit.SECONDS)
 # --------------------------------------------------------------------------------------
 if orgInput:
 	list_files = get_stacks(folder_path, resolution = [40,40], match_pattern = 'OV', exceptions=['ISOLATED'])
-	print([l[0] for l in list_files])
 	# Split list of TIF files into stacks of overlapping files
 	OV_folder_list = split_stacks(list_files)
 	filenames_keys_big, filenames_values_big, OV_folder_list = list_decoder(OV_folder_list)
@@ -152,13 +148,15 @@ else:
 		filenames_keys_big.append(filenames_keys)
 		filenames_values_big.append(filenames_values)
 
+proj_dir= make_dir(output_dir,  "trakem2_files_"+project_name) #make project directory
+transform_dir_big = make_dir(output_dir,"transform_parameters_"+project_name) #make transform folder
 if not rerun:
-	test_dir= make_dir(grand_joint_folder,  "test_0_"+project_name) #make test directory
-proj_dir= make_dir(grand_joint_folder,  "trakem2_files_"+project_name) #make project directory
-transform_dir_big = make_dir(grand_joint_folder,"transform_parameters_"+project_name) #make transform folder
+	test_proj_dir= make_dir(proj_dir,  "test_trakem2")  #make substack specific project folder
+	test_dir= make_dir(output_dir,  "test_0_"+project_name) #make test directory
+
 
 if inverted_image: 
-	large_OV_interim= make_dir(grand_joint_folder, "invert_interim_1"+project_name) #make inverted image directory
+	large_OV_interim= make_dir(output_dir, "invert_interim_1"+project_name) #make inverted image directory
 
 for num in range(0,len(OV_folder_list)): #find files and paths and test alignment for each substack
 	octave_increase = 0
@@ -171,10 +169,9 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 		if len(filenames_keys)==0:
 			print("error-empty list of keys given")
 			break
-		print(filenames_keys, filenames_values)
 		if not rerun:
 			#Creates a TrakEM2 project
-			sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num)) #make substack specific project folder
+			sub_dir= make_dir(test_proj_dir,  "substack_trakem2_"+str(num)) #make substack specific project folder
 			file_list= os.listdir(sub_dir) # get list of all images in substack
 			if temp_proj_name+"test.xml" in file_list: #checks whether project already exists
 				gui = GUI.newNonBlockingDialog("Overwrite?")
@@ -194,26 +191,25 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 														test_dir, windows, 
 														temp_proj_name, inverted_image, size=True)	
 			layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)#creates layerset and adds images
-			if Elastic:
+			if Elastic: #aligns images elastically
 				roi, tiles, transform_XML =align_layers_elastic(param, layerset,True,octave_size)
 
-			if not Elastic:
+			if not Elastic: #aligns images non-elastically
 				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,True,True) #aligns images
 			
 			layerset.setMinimumDimensions() #readjust canvas to minimum dimensions
 			project.saveAs(os.path.join(sub_dir, temp_proj_name+"test"), False)	#save test run						
+			
 			gui = GUI.newNonBlockingDialog("Aligned?")
 			gui.addMessage("Inspect alignment results. Are tiles aligned properly?\n If not, pressing cancel will increase octave size\n (Maximum Image Size parameter) by 200 px. ")
 			gui.showDialog()
 			if gui.wasOKed():
 				filenames_values, filenames_keys, roi, tiles, transforms, transform_XML =adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_keys,filenames_values,True)
-				if num > 0:
-					project.remove(True) 
+				project.remove(True) 
 				transform_dir=make_dir(transform_dir_big,"substack_"+str(num)) #makes directory for transformation information
 				save_xml_files(transform_XML, transform_dir, 1,scaling_number,roi)
 				transform_list.append(transform_dir)
 				tiles_list.append(tiles)
-				project_list.append(temp_proj_name+"test.xml") #fix for windows 
 				break
 			if not gui.wasOKed():
 				octave_increase+=1
@@ -223,56 +219,18 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 			break
 	file_keys_big_list.append(filenames_keys)
 	file_values_big_list.append(filenames_values)
-
+	IJ.run("Close All")
 print("initiall alignment test done")
 print(len(OV_folder_list)+1, "amount of processed substacks")
-
-try: #if not running test opens up previous test project file, clunky way deciding between test mode or not
-	project_list[0]
-except IndexError:
-	proj_folds=folder_find(proj_dir,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
-	proj_folds=file_sort(proj_folds, -1) 
-	projects=Project.getProjects()	
-	transform_folds=folder_find(transform_dir_big,windows) #looks for previous test project file, add function functionality to send gui if you want to make a new folder
-	transform_folds=file_sort(transform_folds, -1) 
-	for proj in proj_folds:
-		xml_file=filter(pattern_xml.match, os.listdir(proj))
-		xml_filepath = os.path.join(proj,xml_file[0])
-		for projected in projects: # finds test project file if open in trakem2
-			if (xml_file[0].split("."))[0] in str(projected):
-				project = Project.getProject(projected)
-				break
-		if not project: #finds test project file in directory and opens it
-			project=Project.openFSProject(xml_filepath, True)
-		project_list.append(project)
-		project=''
-	#load in scaling factor and roi file	#no longer needed?
-	for transformed in transform_folds:#find out why only one scaling_file comes
-		scaling_file=filter(re.compile("\d+_scaling.txt").match, os.listdir(transformed))
-		transform_list.append(transformed)
 
 #Closes open windows to open cache memory
 IJ.run("Close All")
 
-#changed to len(projec_list) since OV_folder_list doesnt accounnt fro the empty substack
-for num in range(0,len(project_list)): #this is for adjusting images to be cropped and, if necessary, inverted. 
-	temp_proj_name=project_name+"_"+str(num)
+for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
 	filenames_keys=file_keys_big_list[num] #gets appropriate substack filepaths and images
 	filenames_values=file_values_big_list[num]
 	if inverted_image:
-		output_inverted=make_dir(large_OV_interim, "inv_substack"+str(num)) #makes inverted substack folder			
-		if num == 0:
-			if folder_find(output_inverted,windows):
-				inverted_subfolders=folder_find(output_inverted,windows)
-			#checks only first folder, but assuming sufficient
-				if filter(pattern_3.match, os.listdir(inverted_subfolders[0])): #checks whether project already exist
-					gui = GUI.newNonBlockingDialog("Overwrite?")
-					gui.addMessage(" Press ok to overwrite already inverted file in invert_interim_1"+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
-					gui.showDialog()
-					if gui.wasOKed():
-						pass
-					elif not gui.wasOKed():
-						sys.exit()
+		output_inverted=delete_interim(large_OV_interim,project_name,pattern_3,"inv_substack",windows,num)
 		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3, 0) #inverts images
 		print(num,"of ",len(OV_folder_list),"substacks processed")
 	
@@ -282,19 +240,10 @@ for num in range(0,len(project_list)): #this is for adjusting images to be cropp
 	
 counter=0  #counter in place as all substacks added into same project, counter determines where last substack ended off
 counter_list=[counter]
-temp_proj_name=project_name+"_"+str(0)
-project = Project.getProject(project_list[0]) #selects appropriate project for image substack
-sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(0)) #makes a directory for this project if not already done
-try: #removes images present from the test trakem2 project
-	remove_tiles(tiles_list[0])
-except IndexError:
-	layerset = project.getRootLayerSet()
-	for layer in layerset.getLayers():
-	  	tiles = layer.getDisplayables(Patch)
-		remove_tiles(tiles)
+main_proj_dir= make_dir(proj_dir,  "main_trakem2")  #make substack specific project folder
+project = Project.newFSProject("blank", None, main_proj_dir) #Creates a TrakEM2 project
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
 	print(num+1, len(OV_folder_list))
-	temp_proj_name=project_name+"_"+str(num)
 	transform =  transform_list[num]
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done								
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
@@ -304,30 +253,18 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 	counter+=len(filenames_values[0])
 	counter_list.append(counter)
 	print("prepared tile order for best overlay")
-	project.saveAs(os.path.join(sub_dir, temp_proj_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
 	layerset.setMinimumDimensions()  #readjust canvas 
-
+	project.saveAs(os.path.join(main_proj_dir, project_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
 AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment
-project.saveAs(os.path.join(sub_dir, temp_proj_name+"aligned"), False) #save project file after z alignment
+layerset.setMinimumDimensions()  #readjust canvas 
+project.saveAs(os.path.join(main_proj_dir, project_name+"aligned"), False) #save project file after z alignment
 
-layerset.setMinimumDimensions()
-
-# 	#exports images
-mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
-exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
+#exports images
+# mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
+# exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
 mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
 exportProject(project, mini_dir,canvas_roi=True, processed=True) #,blend=True)
 	  
 optionalClosingAndDeleting(project,output_dir,project_name) #asks user if they want to close  trackem2 project and delete intermediate files.
 
 print("Done!")
-
-'''
-known error(new):
-	1. line 129 grand_joint_folder change to output
-	2. line 220 project_list.append(temp_proj_name+"test.xml") #fix for windows 
-	3.line 215 #adjust roi to the appropriate scaling number, this can be put under functions
-	4. line 254-267 #load in scaling factor 	#no longer needed? check 380, file should be present with previous  rescaling factor and roi and check with user (if roi is different) to make sure can move forward.shouldn\t need scaling facotr size if transform has all info    
-	5. line 265 #changed to len(projec_list) since OV_folder_list doesnt accounnt fro the empty substack #not sure about this
-
-'''

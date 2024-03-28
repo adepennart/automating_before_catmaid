@@ -648,7 +648,7 @@ def optionalClosingAndDeleting(project, output_directory,project_name):
 	# Create a dialog box with Yes/No options as checkboxes
 	gd = GenericDialog("Close Windows and Remove Interim Files")
 	gd.addMessage("Alignment finished. You have used:" + str(IJ.currentMemory) + " of " + str(IJ.maxMemory))
-	gd.addCheckbox("Close all open windows", True)
+	gd.addCheckbox("Close open project windows", True)
 	gd.addCheckbox("Remove all interim files", False)
 	gd.showDialog()
 	if gd.wasCanceled():
