@@ -25,7 +25,7 @@
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
-A final script is needed to upload images to catmaid (pyramid_make.py) which can be found in another repository (pyramid_make). 
+A final script is needed to upload images to catmaid (pyramid_make.py) which can be found in another repository ([pyramid_make](https://github.com/adepennart/pyramid_make)). 
 
 Additional useful scripts are present for use.
 
