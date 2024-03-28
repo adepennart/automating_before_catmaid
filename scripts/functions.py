@@ -603,7 +603,7 @@ def remove_OV(layerset=None, image_rem_num=None):
 "Following is experimental code modified and written to try to implement elastic alignment"
 "author: Viggo Troback"
 
-def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None):
+def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,roi=None): #edited by Auguste
 	for idx, xml_data in enumerate(xml_data_list):
 		# Specify the filename for the XML file (you can customize this as needed)
 		xml_filename = "image_stack_{}.xml".format(idx+1)
@@ -643,7 +643,6 @@ def save_xml_files(xml_data_list, destination_directory,size=1,scaling_factor=1,
 					xml_file.write(new_content)
 				else:
 					xml_file.write(line)
-		
 
 def optionalClosingAndDeleting(project, output_directory,project_name):
 	# Create a dialog box with Yes/No options as checkboxes
@@ -665,7 +664,7 @@ def optionalClosingAndDeleting(project, output_directory,project_name):
 			# Remove all interim file folders 
 			interim_folders=filter(re.compile(".*"+re.escape(project_name)).match, os.listdir(output_directory))
 			export_files=filter(re.compile('.*export.*').match,interim_folders)
-			for exported in export_files:
+			for exported in export_files: #removes export images from delete list
 				interim_folders.remove(exported)
 			str_interim_folders="\n-".join(interim_folders)
 			gui = GUI.newNonBlockingDialog("Delete?")
@@ -865,8 +864,6 @@ def joinTilesElastic(param, tiles):
 	elasticParam.bmUseLocalSmoothnessFilter = param.bmUseLocalSmoothnessFilter
 	elasticParam.useLegacyOptimizer = param.useLegacyOptimizer
 	elasticParam.visualize = param.visualize
-	
-	# print(tiles)
 	fixed=set(copy.copy([tiles[0:]])) 
 	elasticMontage.exec(elasticParam, tiles, fixed)
 	
@@ -881,41 +878,14 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
 	roi_list = []
 	# various parameters for alignment
 	param = parameters
-#
-#    for n, layer in enumerate(layerset.getLayers()):
-#        tiles = layer.getDisplayables(Patch)  # get all tiles
-#        print(tiles)
-#        layerset.setMinimumDimensions()  # readjust canvas size
-		# if OV_lock:  # here we are linking each image to the previous image of the same stack
-		#     if n == 0:
-		#         old_tiles = tiles
-		#     if n > 0:
-		#         for n, old_tile in enumerate(old_tiles):
-		#             for m, tile in enumerate(tiles):
-		#                 if n == m:
-		#                     #old_tile.link(tile)
-		#                     break
-		#                 old_tiles = tiles
-		#                 # print(tile.isLinked())
-		# tiles[0].setLocked(True)  # lock the OV stack
-		# # i believe tihs is what they are looking for
-		# non_move.append(tiles[0])
 	for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get  all tiles of layer
 		joinTilesLinear(tiles,model_index, octave_size)
-#        if OV_lock:  # could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-			# for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
-			# 	for m, tile_2 in enumerate(tiles[n:]):
-			# 		tile.link(tile_2)
 	transforms, transform_XML=get_patch_transform_data(layerset)
 	for n, layer in enumerate(layerset.getLayers()):
 		tiles = layer.getDisplayables(Patch)  # get  all tiles of layer
-#        remove_OV(layerset,0)
 		joinTilesElastic(param, tiles)
 		if OV_lock:  # could be optimzied here, as repeat,funciton could take in value instead of OV_lock
-			# for n, tile in enumerate(tiles[:-2]): #all images in a layer are linked
-			# 	for m, tile_2 in enumerate(tiles[n:]):
-			# 		tile.link(tile_2)
 			for tile in tiles[0:]:  # roi for each stack of images is collected
 				roi = tile.getBoundingBox()  # needed in OV alignment
 				roi_list.append(roi)
@@ -927,60 +897,22 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
 	transforms2, transform_XML2=get_patch_transform_data(layerset)
 	new_lines=""
 	transform_XML3=[]
-#    for n,xml in enumerate(transform_XML):
-#        print(xml)
 	for n,xml in enumerate(transform_XML2):
-#        print(xml)
 		print("preelastic")
-#        print(transform_XML[n])
 		lines = xml.split('\n')
 		for line in lines:
-#            print(line)
 			if re.findall("AffineModel2D", line): # makes directory
 			   print("found affine")
 			   new_line=transform_XML[n]
 			   new_lines+="\t"+new_line+"\n"
 			else:
 			   new_lines+=line+"\n"
-#        new_xml="\n".join(new_lines)
-#        print("new")
-#        print(new_lines)
 		transform_XML3.append(new_lines)
 		new_lines=""
-#    print(transform_XML3)
 	return roi, tiles, transform_XML3
-	return roi, tiles, transform_XML, transform_XML2
-
-from loci.plugins import BF
-# def exportProject(project, export_directory):
-#     # Get the root layerset
-#    root_layerset = project.getRootLayerSet()
-
-#    # Iterate through the layers in the root layerset
-#    for idx, layer in enumerate(root_layerset.getLayers()):
-#        idx=str(idx)
-#        # Create an empty ImageStack for the layer
-#        layer_stack = ImageStack()
-
-#        # Get the displayables (patches or other elements) within the layer
-#        displayables = layer.getDisplayables()
-
-#        # Iterate through the displayables and add patches to the stack
-#        for displayable in displayables:
-#            if isinstance(displayable, Patch):
-#                image_processor = displayable.getImageProcessor()
-#                layer_stack.addSlice(displayable.getTitle(), image_processor)
-
-#        # Create an ImagePlus from the ImageStack
-#        layer_image = ImagePlus(idx, layer_stack)
-#        layer_image.show()
-#        # Save the ImagePlus as TIFF
-#        tif_path = "{}/{}.tif".format(export_directory, idx)
-#        IJ.saveAsTiff(layer_image, tif_path)
 
 def exportProject(project=None, output_dir=None, canvas_roi=False, processed=False, blend=False):
 	# export variables
-	
 	export_type = 0  # GRAY8
 	backgroundColor = Color(0, 0, 0, 0)
 	scale = 1.0
@@ -996,9 +928,7 @@ def exportProject(project=None, output_dir=None, canvas_roi=False, processed=Fal
 	mask = None
 	layerset = project.getRootLayerSet()
 	for i, layer in enumerate(layerset.getLayers()):  # loop through each layer
-		#  print(layer)
 		tiles = layer.getDisplayables(Patch)
-		#  print(tiles)
 		if canvas_roi:  # save image with whole canvas
 			roi = layerset.get2DBounds()
 		elif not canvas_roi:  # save image without whole canvas
@@ -1016,13 +946,6 @@ def exportProject(project=None, output_dir=None, canvas_roi=False, processed=Fal
 			backgroundColor,
 			True)  # use the min and max of each tile
 			
-		 #on mac this does not export correctly
-#        imp=Transform.ExportUnsignedShort.makeFlatImage(  # image paramaters
-#            tiles,
-#            roi,
-#            0.0,
-#            scale)  # Make alpha mask
-#        img = ImagePlus("Flat montage", imp)  # creates image
 		img = ImagePlus("Flat montage", ip)  # creates image
 		if processed:  # processes image if desired
 			img.getProcessor().blurGaussian(sigmaPixels)
@@ -1037,42 +960,6 @@ def exportProject(project=None, output_dir=None, canvas_roi=False, processed=Fal
 										   composite)
 		FileSaver(img).saveAsTiff(output_dir + "/" + str(i + 1) +
 								  ".tif")  # saves file to output directory
-
-# def exportProject(project, export_directory):
-#     # Get the list of layers in the project
-#     layers = project.getRootLayerSet().getLayers()
-
-#     # Iterate through the layers and their images
-#     for layer in layers:
-#         images = layer.getDisplayables()
-		
-#         for idx, img in enumerate(images):
-#             img2=img.getImagePlus()
-#             img2.show()
-#             # Save the image as TIFF with numbered names
-#             tif_path = "{}/{}_{}.tif".format(export_directory, layer.getName(), idx)
-#             IJ.saveAsTiff(img.PatchImage, tif_path)
-
-def add_patch_andTransform(filenames_keys=None, filenames_values=None, project=None, start_lay=None, tot_lay=None, transform_folder=None ): #layerset=None,
-	layerset = project.getRootLayerSet()#get the layerset
-
-	for i in range(start_lay,tot_lay):#add to the layerset the desired amount of layers 
-		layerset.getLayer(i, 1, True)
-	for i ,layer in enumerate(layerset.getLayers()): #add images to each layer
-		for n, fold in enumerate(filenames_keys):
-			file= "image_stack_"+str(n+1)+".xml"
-			path=os.path.join(transform_folder,file)
-			#print(path)
-			transform = Transform_VS.readCoordinateTransform(path)
-			#print(filenames_values[n][i-start_lay])
-			filepath = os.path.join(fold, filenames_values[n][i-start_lay])
-			patch = Patch.createPatch(project, filepath)
-			patch.setCoordinateTransform(transform)
-#            patch.updateMipMaps()
-			layer.add(patch)
-			#print(patch)
-			layer.recreateBuckets() #update layerset?
-	return layerset
 
 # %%
 "Reorganising output-files"
@@ -1339,3 +1226,100 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 	if roi: #assumes currently one directory for tiles, otherwise will return last set of tiles, not an roi list 
 		return man_moved_tiles, man_moved_paths, roi, tiles, transformation_data, transformation_files
 	return man_moved_tiles, man_moved_paths, transformation_data, transformation_files
+
+
+def adjust_roi(roi,scaling_number):
+	'''
+	reset to actual roi of unmodified image
+	
+	Args:
+		
+		roi ('trackem2 roi object'):
+			
+			region of interest
+			
+		scaling_number ('int'):
+		
+			number by which image was scaled
+	
+	'''
+	roi.x=int(roi.x*(1/scaling_number))#adjust roi to the appropriate scaling number, this can be put under functions
+	roi.y=int(roi.y*(1/scaling_number))
+	roi.width=int(roi.width*(1/scaling_number))
+	roi.height=int(roi.height*(1/scaling_number))
+	return roi
+
+#simple function for saving tot_roi
+def save_roi(roi, destination_directory):
+	'''
+	saves roi to file
+	
+	Args:
+		
+		roi ('trackem2 roi object'):
+			
+			region of interest
+			
+		destination_directory ('str'):
+		
+			file path to where roi file to be saved
+
+	'''
+ 	roi_number_file=open(os.path.join(destination_directory, str(1)+"_roi.xml"),"w") #makes a file with roi, add to function 
+ 	roi_number_file.write(str(roi))
+ 	roi_number_file.close()
+
+
+def delete_interim(parent_dir,project_name,pattern_tif,pattern_dir,windows,num):
+	'''
+	function for removing interim folders (inverted or scaled)
+	
+	Args:
+		
+		parent_dir (`str`):
+			
+			Absolute path to the directory containing subdirectories with TIF files to be removed.
+			
+		project_name(`str`):
+		
+			name of project
+			
+		pattern_tif (`str`):
+		
+			Pattern to match image names. 
+
+		pattern_dir (`str`):
+		
+			Pattern to match in the directory names. 
+            			
+		exceptions (list of 'str'):
+		
+			List of string to look for and exclude folders that contain it. None by default
+	
+	'''
+	output_fold=make_dir(parent_dir, pattern_dir+str(num))
+	if num == 0:
+		if folder_find(output_fold,windows):
+			inverted_subfolders=folder_find(output_fold,windows)
+		#checks only first folder, but assuming sufficient
+			if filter(pattern_tif.match, os.listdir(inverted_subfolders[0])): #checks whether images already exist
+				gui = GUI.newNonBlockingDialog("Delete and rewrite?")
+				gui.addMessage(" Press ok to delete and rewrite already inverted files in "+pattern_dir+project_name+"?\n Pressing cancel will exit the script.")#do i need to remove preexisting files
+				gui.showDialog()
+				if gui.wasOKed():
+					interim_folders=filter(re.compile(".*"+re.escape(pattern_dir)).match, os.listdir(parent_dir))
+					str_interim_folders="\n-".join(interim_folders)
+					gui = GUI.newNonBlockingDialog("Delete?")
+					gui.addMessage(" Press ok to delete following interim files: \n-"+str_interim_folders)
+					gui.showDialog()
+					if gui.wasOKed():
+						for folder_name in interim_folders:
+							folder_path = os.path.join(parent_dir, folder_name)
+							if os.path.exists(folder_path) and os.path.isdir(folder_path):
+								delete_non_empty_folder(folder_path)
+						for n, folder_name in enumerate(interim_folders):
+							make_dir(parent_dir, pattern_dir+str(n))
+				elif not gui.wasOKed():
+					sys.exit()
+	return output_fold
+					
