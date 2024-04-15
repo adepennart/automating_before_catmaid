@@ -174,7 +174,6 @@ def folder_find(loop_fold=None,  windows=None, append_fold=None):
 		elif not windows:
 			filename = loop_fold+"/"+filename
 		if os.path.isdir(filename):
-			print("found folder")
 			all_folder_list.append(filename)
 	# if no folders found loop_fold, assumes this is instead the folder to find files
 	if len(all_folder_list) == 0:
@@ -692,7 +691,7 @@ def delete_non_empty_folder(folder_path):
 			delete_non_empty_folder(dir_path)
 		# Finally, remove the top-level folder
 		os.rmdir(folder_path)
-		print("Deleted folder:",folder_path)
+		print("Deleted folder:{}".format(folder_path))
 	except OSError as e:
 		print("Error deleting folder:",folder_path,e)
 
@@ -707,7 +706,6 @@ def get_patch_transform_data(layerset):
 		for n, tile in enumerate(tiles):
 			# Get the transformation for the tile
 			transform = tile.getFullCoordinateTransform()
-#            print(transform)
 			# Store the transformation data for the tile
 			transformation_data[n] = transform
 			transformation_files.append(transform.toXML(""))
@@ -898,11 +896,9 @@ def align_layers_elastic(parameters, model_index, layerset=None, OV_lock=None,
 	new_lines=""
 	transform_XML3=[]
 	for n,xml in enumerate(transform_XML2):
-		print("preelastic")
 		lines = xml.split('\n')
 		for line in lines:
 			if re.findall("AffineModel2D", line): # makes directory
-			   print("found affine")
 			   new_line=transform_XML[n]
 			   new_lines+="\t"+new_line+"\n"
 			else:
@@ -981,7 +977,6 @@ def get_files_info(directory_path, only_first=True):
 	'''
 	
 	info_files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if '.info' in f]
-	print(info_files)
 	if only_first:
 		with open(info_files[0], 'r') as f:
 			txt = f.read()
@@ -1072,7 +1067,6 @@ def get_stacks(master_dir, resolution, match_pattern='', exceptions=None,get_inf
 			k_info, v_info = get_files_info(directory)
 			if resolution != v_info[k_info.index('pixelsize')]:
 				continue
-		print(directory)
 		
 		all_tifs = [os.path.join(directory, f) for f in os.listdir(directory) if '.tif' in f]
 		files = [f for f in all_tifs if 'Tile_001-001' in f]
@@ -1218,7 +1212,6 @@ def adopt_man_move(layerset,temp_filenames_keys,temp_filenames_values,filenames_
 					transformation_files.append(transform.toXML(""))
 			if roi: #i.e., for high_res.py
 				if n > 0:
-					print(tile.getBoundingBox())
 					if n == 1:
 						roi = tile.getBoundingBox()  # needed in OV alignment	
 					else:

@@ -165,7 +165,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 		temp_proj_name=project_name+"_"+str(num)
 		filenames_keys=filenames_keys_big[num]
 		filenames_values=filenames_values_big[num]
-		print("folder and its content registered")
+		print('folder {}:\n content registered'.format(num+1))
 		if len(filenames_keys)==0:
 			print("error-empty list of keys given")
 			break
@@ -191,8 +191,9 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 														test_dir, windows, 
 														temp_proj_name, inverted_image, size=True)	
 			layerset=add_patch(temp_filenames_keys,temp_filenames_values, project, 0, 1)#creates layerset and adds images
+			print(' running test align with:\n  model_index:{} \n  octave size:{}  \n  scaling_number:{}'.format(model_index,octave_size,scaling_number))
 			if Elastic: #aligns images elastically
-				roi, tiles, transform_XML =align_layers_elastic(param, layerset,True,octave_size)
+				roi, tiles, transform_XML =align_layers_elastic(param, model_index, layerset,True,octave_size)
 
 			if not Elastic: #aligns images non-elastically
 				roi, tiles, transforms, transform_XML =align_layers(model_index, octave_size, layerset,True,True) #aligns images
@@ -220,8 +221,7 @@ for num in range(0,len(OV_folder_list)): #find files and paths and test alignmen
 	file_keys_big_list.append(filenames_keys)
 	file_values_big_list.append(filenames_values)
 	IJ.run("Close All")
-print("initiall alignment test done")
-print(len(OV_folder_list)+1, "amount of processed substacks")
+print("alignment test complete for all folders")
 
 #Closes open windows to open cache memory
 IJ.run("Close All")
@@ -232,9 +232,7 @@ for num in range(0,len(OV_folder_list)): #this is where the actually alignment t
 	if inverted_image:
 		output_inverted=delete_interim(large_OV_interim,project_name,pattern_3,"inv_substack",windows,num)
 		filenames_keys, filenames_values = invert_image(filenames_keys, filenames_values, output_inverted, windows, pattern_3, 0) #inverts images
-		print(num,"of ",len(OV_folder_list),"substacks processed")
-	
-	print("files potentially cropped and or inverted")
+		print("{} of {} substacks inverted".format(num+1,len(OV_folder_list)))
 	file_keys_big_list[num]=filenames_keys #refreshes to correct filepaths and file names
 	file_values_big_list[num]=filenames_values
 	
@@ -243,27 +241,36 @@ counter_list=[counter]
 main_proj_dir= make_dir(proj_dir,  "main_trakem2")  #make substack specific project folder
 project = Project.newFSProject("blank", None, main_proj_dir) #Creates a TrakEM2 project
 for num in range(0,len(OV_folder_list)): #this is where the actually alignment takes place
-	print(num+1, len(OV_folder_list))
 	transform =  transform_list[num]
 	sub_dir= make_dir(proj_dir,  "substack_trakem2_"+str(num))  #makes a directory for this project if not already done								
 	filenames_keys=file_keys_big_list[num]#gets correct filepaths and file names
 	filenames_values=file_values_big_list[num]
+	print('adding folder {} of {} to trakem2'.format(num+1,len(OV_folder_list)))
 	layerset=add_patch_v2(filenames_keys,filenames_values
 	, project, counter, counter+len(filenames_values[0]),transform)
 	counter+=len(filenames_values[0])
 	counter_list.append(counter)
-	print("prepared tile order for best overlay")
+	print('added folder {} of {} to trakem2'.format(num+1,len(OV_folder_list)))
 	layerset.setMinimumDimensions()  #readjust canvas 
-	project.saveAs(os.path.join(main_proj_dir, project_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 	
+	project.saveAs(os.path.join(main_proj_dir, project_name+"layer_filled_to_"+str(counter)), False) #save project file before z alignment 
+print("beginning realignment of tiles for every z layer")	
+align_layers(model_index, 600, layerset, None,False) #following allows for little corrections in alignment
+project.saveAs(os.path.join(main_proj_dir, project_name+"re_aligned"), False) #save project file after z alignment
+print("beginning image alignment of all images in z axis")	
 AlignLayersTask.alignLayersLinearlyJob(layerset,0,len(layerset.getLayers())-1,False,None,None) #z alignment
+print("finished image alignment for all images in z axis")	
 layerset.setMinimumDimensions()  #readjust canvas 
 project.saveAs(os.path.join(main_proj_dir, project_name+"aligned"), False) #save project file after z alignment
 
 #exports images
-# mini_dir= make_dir(output_dir,  "export_unprocessed_"+str(num))
-# exportProject(project, mini_dir,canvas_roi=True)#,blend=True)
-mini_dir= make_dir(output_dir,  "export_processed_"+str(num))
-exportProject(project, mini_dir,canvas_roi=True, processed=True) #,blend=True)
+print("beginning to export all unprocessed images")	
+mini_dir= make_dir(output_dir,  "export_unprocessed") #uncomment if you want unprocessed images as well
+exportProject(project, mini_dir,canvas_roi=True)#,blend=True)  #uncomment if you want unprocessed images as well
+print("beginning to export all processed images")	
+mini_dir= make_dir(output_dir,  "export_processed")
+exportProject(project, mini_dir,canvas_roi=True, processed=True)#,blend=True)
+print("done exporting all  images")	
+
 	  
 optionalClosingAndDeleting(project,output_dir,project_name) #asks user if they want to close  trackem2 project and delete intermediate files.
 
