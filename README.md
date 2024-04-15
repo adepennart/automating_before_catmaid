@@ -25,9 +25,9 @@
 ## About
 Two scripts to use subquentially for aligning low resolution images (low_res.py) and then high resolution images to the low resolution ones(high_res.py).
 
-A final script is needed for uploading images to catmaid(catmaid.py) after either low_res.py or high_res.py. 
+A final script is needed to upload images to catmaid (pyramid_make.py) which can be found in another repository ([pyramid_make](https://github.com/adepennart/pyramid_make)). 
 
-Additional useful scripts are also present for use.
+Additional useful scripts are present for use.
 
 example inputs and outputs are also provided.
 
@@ -69,7 +69,7 @@ Elastic Alignment
 Unorganized input
 ```
 
-INPUT DIRECTORY, The directory with all the images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+INPUT DIRECTORY, The directory with all the images to be aligned. If no SBEM info files are present with the images inte these folders, the image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
 ```
 ++------/input
 +	+------/OV
@@ -104,7 +104,7 @@ USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
 SCRIPT PREVIOUSLY RUN (alignment parameter saved in file), Select when rerunning script, i.e., when a previous run crashes before the end.
 
-ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
+ELASTIC ALIGNMENT, (BETA) Specify whether you would like to elastically align the images.
 
 UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly organize files for alignment.
 
@@ -130,7 +130,7 @@ Elastic Alignment
 Unorganized input
 ```
 
-LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
+LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be aligned. If no SBEM info files are present with the images inte these folders, image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. I.e., folder structure below.
 ```
 ++------/input
 +	+------/OV
@@ -152,7 +152,7 @@ LOW RESOLUTION DIRECTORY, The directory with all the low resolution images to be
 +			+------/ovn_n_.tif
 ```
 
-HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. Image tiles are to be further placed in subsub directories. 
+HIGH RESOLUTION DIRECTORY, The directory with all the high resolution images to be aligned. Image substacks are to be placed in sub directories. If no SBEM info files are present with the images inte these folders, image tiles are to be further placed in subsub directories. 
 ```
 ++------/input
 +	+------/NO
@@ -227,37 +227,9 @@ USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
 
 SCRIPT PREVIOUSLY RUN (alignment parameter saved in file), Select when rerunning script, i.e., when a previous run crashes before the end.
 
-ELASTIC ALIGNMENT, Specify whether you would like to elastically align the images.
+ELASTIC ALIGNMENT, BETA Specify whether you would like to elastically align the images.
 
 UNORGANIZED INPUT, Specify whether you have SBEM info files present to correctly organize files for alignment.
-
-#### catmaid.py
-
-Below you have the parameter menu given to you for catmaid.py. 
-
-```
-Input directory
-Output directory
-project name
-using a windows machine
-add images to layers in trackem2
-export images as unprocessed and processed"
-is project already loaded in trakem2 as only loaded project
-```
-
-INPUT DIRECTORY, The directory with all the images to be aligned.
-
-OUTPUT DIRECTORY, an empty directory where output images will be placed.
-
-PROJECT NAME, chosen name for your Trackem2 project.
-        
-USING A WINDOWS MACHINE, specify whether you are using a windows machine or not.
-
-ADD IMAGES...TRACKEM2, add images to layers of trakem2 project.
-
-EXPROT IMAGES...PROCESSED, specify whether you would like to export images as processed and unprocessed.
-
-IS PROJECT...LOADED PROJECT, specify whether to make a new trakem2 project or use the one and only project already loaded in trakem2.
 
 ## Example
 
@@ -277,5 +249,3 @@ script previously run (alignment parameter saved in file) unchecked
 Elastic Alignment: unchecked
 Unorganized input: unchecked
 ```
-
-
